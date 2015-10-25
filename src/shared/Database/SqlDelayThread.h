@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,77 +14,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #ifndef __SQLDELAYTHREAD_H
 #define __SQLDELAYTHREAD_H
 
-#include <ace/Thread_Mutex.h>
+#include "ace/Thread_Mutex.h"
 #include "LockedQueue.h"
 #include "Threading.h"
+
 
 class Database;
 class SqlOperation;
 class SqlConnection;
 
-/**
- * @brief
- *
- */
 class SqlDelayThread : public ACE_Based::Runnable
 {
-        /**
-         * @brief
-         *
-         */
-        typedef ACE_Based::LockedQueue<SqlOperation*, ACE_Thread_Mutex> SqlQueue;
+    typedef ACE_Based::LockedQueue<SqlOperation*, ACE_Thread_Mutex> SqlQueue;
 
     private:
-        SqlQueue m_sqlQueue;                                /**< Queue of SQL statements */
-        Database* m_dbEngine;                               /**< Pointer to used Database engine */
-        SqlConnection* m_dbConnection;                      /**< Pointer to DB connection */
-        volatile bool m_running; /**< TODO */
+        SqlQueue m_sqlQueue;                                ///< Queue of SQL statements
+        Database* m_dbEngine;                               ///< Pointer to used Database engine
+        SqlConnection * m_dbConnection;                     ///< Pointer to DB connection
+        volatile bool m_running;
 
-        /**
-         * @brief process all enqueued requests
-         *
-         */
+        //process all enqueued requests
         void ProcessRequests();
 
     public:
-        /**
-         * @brief
-         *
-         * @param db
-         * @param conn
-         */
         SqlDelayThread(Database* db, SqlConnection* conn);
-        /**
-         * @brief
-         *
-         */
         ~SqlDelayThread();
 
-        /**
-         * @brief Put sql statement to delay queue
-         *
-         * @param sql
-         * @return bool
-         */
+        ///< Put sql statement to delay queue
         bool Delay(SqlOperation* sql) { m_sqlQueue.add(sql); return true; }
 
-        /**
-         * @brief Stop event
-         *
-         */
-        virtual void Stop();
-        /**
-         * @brief Main Thread loop
-         *
-         */
-        virtual void run();
+        virtual void Stop();                                ///< Stop event
+        virtual void run();                                 ///< Main Thread loop
 };
 #endif                                                      //__SQLDELAYTHREAD_H

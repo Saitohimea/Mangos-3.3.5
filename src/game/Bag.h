@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,13 +33,13 @@ class Bag : public Item
         Bag();
         ~Bag();
 
-        void AddToWorld() override;
-        void RemoveFromWorld() override;
+        void AddToWorld();
+        void RemoveFromWorld();
 
-        bool Create(uint32 guidlow, uint32 itemid, Player const* owner) override;
+        bool Create(uint32 guidlow, uint32 itemid, Player const* owner);
 
         void Clear();
-        void StoreItem(uint8 slot, Item* pItem, bool update);
+        void StoreItem(uint8 slot, Item *pItem, bool update);
         void RemoveItem(uint8 slot, bool update);
 
         Item* GetItemByPos(uint8 slot) const;
@@ -55,13 +55,13 @@ class Bag : public Item
 
         // DB operations
         // overwrite virtual Item::SaveToDB
-        void SaveToDB() override;
+        void SaveToDB();
         // overwrite virtual Item::LoadFromDB
-        bool LoadFromDB(uint32 guidLow, Field* fields, ObjectGuid ownerGuid = ObjectGuid()) override;
+        bool LoadFromDB(uint32 guidLow, Field* fields, ObjectGuid ownerGuid = ObjectGuid());
         // overwrite virtual Item::DeleteFromDB
-        void DeleteFromDB() override;
+        void DeleteFromDB();
 
-        void BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) const override;
+        void BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) const;
 
     protected:
 

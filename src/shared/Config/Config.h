@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ class MANGOS_DLL_SPEC Config
         Config();
         ~Config();
 
-        bool SetSource(const char* file);
+        bool SetSource(const char *file);
         bool Reload();
 
         std::string GetStringDefault(const char* name, const char* def);
@@ -42,10 +42,12 @@ class MANGOS_DLL_SPEC Config
 
         std::string GetFilename() const { return mFilename; }
 
+        ACE_Thread_Mutex mMtx;
+
     private:
 
         std::string mFilename;
-        ACE_Configuration_Heap* mConf;
+        ACE_Configuration_Heap *mConf;
 };
 
 #define sConfig MaNGOS::Singleton<Config>::Instance()

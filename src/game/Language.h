@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,8 +42,8 @@ enum MangosStrings
     LANG_GMS_ON_SRV                     = 16,
     LANG_GMS_NOT_LOGGED                 = 17,
     LANG_YOU_IN_FLIGHT                  = 18,
-    // LANG_YOU_IN_BATTLEGROUND            = 19, not used
-    // LANG_TARGET_IN_FLIGHT               = 20, not used
+    //LANG_YOU_IN_BATTLEGROUND            = 19, not used
+    //LANG_TARGET_IN_FLIGHT               = 20, not used
     LANG_CHAR_IN_FLIGHT                 = 21,
     LANG_CHAR_NON_MOUNTED               = 22,
     LANG_YOU_IN_COMBAT                  = 23,
@@ -83,7 +83,7 @@ enum MangosStrings
     LANG_USING_WORLD_DB                 = 57,
     LANG_USING_SCRIPT_LIB               = 58,
     LANG_USING_EVENT_AI                 = 59,
-    // LANG_RA_BUSY                      = 60, not used
+    //LANG_RA_BUSY                      = 60, not used
     LANG_RA_USER                        = 61,
     LANG_RA_PASS                        = 62,
     LANG_GM_ACCEPTS_WHISPER             = 63,
@@ -119,7 +119,7 @@ enum MangosStrings
     LANG_YOU_CHANGE_ENERGY              = 122,
     LANG_YOURS_ENERGY_CHANGED           = 123,
 
-    LANG_CURRENT_ENERGY                 = 124,              // log
+    LANG_CURRENT_ENERGY                 = 124,              //log
     LANG_YOU_CHANGE_RAGE                = 125,
     LANG_YOURS_RAGE_CHANGED             = 126,
     LANG_YOU_CHANGE_LVL                 = 127,
@@ -501,8 +501,8 @@ enum MangosStrings
     LANG_REMOVEALL_COOLDOWN             = 492,
     LANG_REMOVE_COOLDOWN                = 493,
 
-    LANG_ADDITEM                        = 494,              // log
-    LANG_ADDITEMSET                     = 495,              // log
+    LANG_ADDITEM                        = 494,              //log
+    LANG_ADDITEMSET                     = 495,              //log
     LANG_REMOVEITEM                     = 496,
     LANG_ITEM_CANNOT_CREATE             = 497,
     LANG_INSERT_GUILD_NAME              = 498,
@@ -535,22 +535,22 @@ enum MangosStrings
 
     LANG_GAMEOBJECT_NOT_EXIST           = 522,
 
-    LANG_GAMEOBJECT_CURRENT             = 523,              // log
+    LANG_GAMEOBJECT_CURRENT             = 523,              //log
     LANG_GAMEOBJECT_DETAIL              = 524,
     LANG_GAMEOBJECT_ADD                 = 525,
 
     LANG_MOVEGENS_LIST                  = 526,
-    LANG_MOVEGENS_IDLE                  = 527,
-    LANG_MOVEGENS_RANDOM                = 528,
-    LANG_MOVEGENS_WAYPOINT              = 529,
-    LANG_MOVEGENS_ANIMAL_RANDOM         = 530,
+    LANG_MOVEGENS_DEFAULT               = 527,
+//    LANG_MOVEGENS_RANDOM                = 528,
+//    LANG_MOVEGENS_WAYPOINT              = 529,
+//    LANG_MOVEGENS_ANIMAL_RANDOM         = 530,
     LANG_MOVEGENS_CONFUSED              = 531,
-    LANG_MOVEGENS_CHASE_PLAYER          = 532,
-    LANG_MOVEGENS_CHASE_CREATURE        = 533,
-    LANG_MOVEGENS_CHASE_NULL            = 534,
+    LANG_MOVEGENS_CHASE_TARGET          = 532,
+//    LANG_MOVEGENS_CHASE_CREATURE        = 533,
+//    LANG_MOVEGENS_CHASE_NULL            = 534,
     LANG_MOVEGENS_HOME_CREATURE         = 535,
     LANG_MOVEGENS_HOME_PLAYER           = 536,
-    LANG_MOVEGENS_FLIGHT                = 537,
+//    LANG_MOVEGENS_FLIGHT                = 537,
     LANG_MOVEGENS_UNKNOWN               = 538,
 
     LANG_NPCINFO_CHAR                   = 539,
@@ -572,8 +572,8 @@ enum MangosStrings
     LANG_YOURS_EXPLORE_SET_ALL          = 553,
     LANG_YOURS_EXPLORE_SET_NOTHING      = 554,
 
-    //                                    555,              // not used
-    //                                    556,              // not used
+    LANG_HOVER_ENABLED                  = 555,
+    LANG_HOVER_DISABLED                 = 556,
     LANG_YOURS_LEVEL_UP                 = 557,
     LANG_YOURS_LEVEL_DOWN               = 558,
     LANG_YOURS_LEVEL_PROGRESS_RESET     = 559,
@@ -583,17 +583,17 @@ enum MangosStrings
     //                                    562,              // not used
     //                                    563,              // not used
     LANG_TOO_BIG_INDEX                  = 564,
-    LANG_SET_UINT                       = 565,              // log
+    LANG_SET_UINT                       = 565,              //log
     LANG_SET_UINT_FIELD                 = 566,
-    LANG_SET_FLOAT                      = 567,              // log
+    LANG_SET_FLOAT                      = 567,              //log
     LANG_SET_FLOAT_FIELD                = 568,
-    LANG_GET_UINT                       = 569,              // log
+    LANG_GET_UINT                       = 569,              //log
     LANG_GET_UINT_FIELD                 = 570,
-    LANG_GET_FLOAT                      = 571,              // log
+    LANG_GET_FLOAT                      = 571,              //log
     LANG_GET_FLOAT_FIELD                = 572,
-    //                                    573,              // not used
-    //                                    574,              // not used
-    LANG_CHANGE_INT32                   = 575,              // log
+    //                                    573,              //not used
+    //                                    574,              //not used
+    LANG_CHANGE_INT32                   = 575,              //log
     LANG_CHANGE_INT32_FIELD             = 576,
 
     LANG_INVISIBLE_INVISIBLE            = 577,
@@ -711,8 +711,8 @@ enum MangosStrings
     LANG_YOUR_BG_LEVEL_REQ_ERROR        = 715,
 //                                      = 716, not used
     LANG_BG_STARTED_ANNOUNCE_WORLD      = 717,
-    LANG_ARENA_QUEUE_ANNOUNCE_WORLD_JOIN = 718,
-    LANG_ARENA_QUEUE_ANNOUNCE_WORLD_EXIT = 719,
+    LANG_ARENA_QUEUE_ANNOUNCE_WORLD_JOIN= 718,
+    LANG_ARENA_QUEUE_ANNOUNCE_WORLD_EXIT= 719,
 
     LANG_BG_GROUP_TOO_LARGE             = 720,              // "Your group is too large for this battleground. Please regroup to join."
     LANG_ARENA_GROUP_TOO_LARGE          = 721,              // "Your group is too large for this arena. Please regroup to join."
@@ -788,7 +788,9 @@ enum MangosStrings
     LANG_BG_AV_H_NEAR_LOSE              = 788,
     LANG_BG_AV_H_GENERAL_DEAD           = 789,
     LANG_BG_AV_A_GENERAL_DEAD           = 790,
-    // Room for battleground/arena strings 791-799 not used
+
+
+    // Room for batleground/arena strings 791-799 not used
 
     // in game strings
     //                                  = 800, not used
@@ -808,9 +810,7 @@ enum MangosStrings
     LANG_GUILD_MEMBER                   = 814,
     LANG_GUILD_INITIATE                 = 815,
     LANG_FAIL_ENTER_SPECTRAL_REALM      = 816,
-    LANG_NO_FLY_ZONE                    = 817,
-    LANG_TELEREQ_QUEST_BLACK_MORASS     = 818,
-    // Room for in-game strings           819-999 not used
+    // Room for in-game strings           817-999 not used
 
     // Level 4 (CLI only commands)
     LANG_COMMAND_EXIT                   = 1000,
@@ -878,9 +878,9 @@ enum MangosStrings
     LANG_TAXINODE_ENTRY_LIST_CONSOLE    = 1129,
     LANG_EVENT_STARTED                  = 1130,
     LANG_EVENT_STOPPED                  = 1131,
-    LANG_MOVEGENS_FOLLOW_PLAYER         = 1132,
-    LANG_MOVEGENS_FOLLOW_CREATURE       = 1133,
-    LANG_MOVEGENS_FOLLOW_NULL           = 1134,
+    LANG_MOVEGENS_FOLLOW_TARGET         = 1132,
+//    LANG_MOVEGENS_FOLLOW_CREATURE       = 1133,
+//    LANG_MOVEGENS_FOLLOW_NULL           = 1134,
     LANG_LIST_TALENTS_TITLE             = 1135,
     LANG_LIST_TALENTS_COUNT             = 1136,
     LANG_GO_LIST_CHAT                   = 1137,
@@ -899,13 +899,13 @@ enum MangosStrings
     LANG_NPC_GO_INFO_EVENT_STRING       = 1150,
     LANG_NPC_GO_INFO_POOL_EVENT_STRING  = 1151,
     LANG_COMMAND_ITEM_USABLE            = 1152,
-    LANG_GET_BITSTR                     = 1153,             // log
+    LANG_GET_BITSTR                     = 1153,             //log
     LANG_GET_BITSTR_FIELD               = 1154,
-    LANG_GET_HEX                        = 1155,             // log
+    LANG_GET_HEX                        = 1155,             //log
     LANG_GET_HEX_FIELD                  = 1156,
-    LANG_CHANGE_HEX                     = 1157,             // log
+    LANG_CHANGE_HEX                     = 1157,             //log
     LANG_CHANGE_HEX_FIELD               = 1158,
-    LANG_CHANGE_FLOAT                   = 1159,             // log
+    LANG_CHANGE_FLOAT                   = 1159,             //log
     LANG_CHANGE_FLOAT_FIELD             = 1160,
     LANG_COMMAND_ACHIEVEMENT_CRITERIA   = 1161,
     LANG_COUNTER                        = 1162,
@@ -940,9 +940,7 @@ enum MangosStrings
     LANG_AHBOT_ITEMS_RATIO              = 1191,
     LANG_MOVEGENS_EFFECT                = 1192,
     LANG_GEARSCORE                      = 1193,
-    LANG_COMMAND_GO_STATUS              = 1194,
-    LANG_COMMAND_GO_STATUS_DOOR         = 1195,
-    // Room for more level 3              1196-1199 not used
+    // Room for more level 3              1194-1199 not used
 
     // Debug commands
     LANG_CINEMATIC_NOT_EXIST            = 1200,
@@ -968,62 +966,173 @@ enum MangosStrings
     LANG_NPC_EVENTAI_PHASE              = 1506,
     LANG_NPC_EVENTAI_MOVE               = 1507,
     LANG_NPC_EVENTAI_COMBAT             = 1508,
-    LANG_POOL_ENTRY_LOWER_MAX_POOL      = 1509,
-    // Room for more Level 2              1510-1599 not used
+    // Room for more Level 2              1509-1599 not used
 
-    // Outdoor PvP
-    LANG_OPVP_EP_CAPTURE_NPT_H          = 1600,
-    LANG_OPVP_EP_CAPTURE_NPT_A          = 1601,
-    LANG_OPVP_EP_CAPTURE_CGT_H          = 1602,
-    LANG_OPVP_EP_CAPTURE_CGT_A          = 1603,
-    LANG_OPVP_EP_CAPTURE_EWT_H          = 1604,
-    LANG_OPVP_EP_CAPTURE_EWT_A          = 1605,
-    LANG_OPVP_EP_CAPTURE_PWT_H          = 1606,
-    LANG_OPVP_EP_CAPTURE_PWT_A          = 1607,
+    // FREE IDS                           1600-9999
 
-    LANG_OPVP_HP_CAPTURE_OVERLOOK_H     = 1608,
-    LANG_OPVP_HP_CAPTURE_OVERLOOK_A     = 1609,
-    LANG_OPVP_HP_CAPTURE_STADIUM_H      = 1610,
-    LANG_OPVP_HP_CAPTURE_STADIUM_A      = 1611,
-    LANG_OPVP_HP_CAPTURE_BROKENHILL_H   = 1612,
-    LANG_OPVP_HP_CAPTURE_BROKENHILL_A   = 1613,
+    // Broadcaster
+    LANG_AUTO_BROADCAST                 = 1300,
 
-    LANG_OPVP_ZM_CAPTURE_EAST_BEACON_H  = 1614,
-    LANG_OPVP_ZM_CAPTURE_EAST_BEACON_A  = 1615,
-    LANG_OPVP_ZM_CAPTURE_WEST_BEACON_H  = 1616,
-    LANG_OPVP_ZM_CAPTURE_WEST_BEACON_A  = 1617,
-    LANG_OPVP_ZM_CAPTURE_BOTH_BEACONS_H = 1618,
-    LANG_OPVP_ZM_CAPTURE_BOTH_BEACONS_A = 1619,
-    LANG_OPVP_ZM_SPAWN_FIELD_SCOUT_H    = 1620,
-    LANG_OPVP_ZM_SPAWN_FIELD_SCOUT_A    = 1621,
-    LANG_OPVP_ZM_CAPTURE_GRAVEYARD_H    = 1622,
-    LANG_OPVP_ZM_CAPTURE_GRAVEYARD_A    = 1623,
-
-    LANG_OPVP_TF_CAPTURE_TOWER_H        = 1624,
-    LANG_OPVP_TF_CAPTURE_TOWER_A        = 1625,
-    LANG_OPVP_TF_LOSE_TOWER_H           = 1626,
-    LANG_OPVP_TF_LOSE_TOWER_A           = 1627,
-    LANG_OPVP_TF_CAPTURE_ALL_TOWERS_H   = 1628,
-    LANG_OPVP_TF_CAPTURE_ALL_TOWERS_A   = 1629,
-
-    LANG_OPVP_NA_PROGRESS_H             = 1630,
-    LANG_OPVP_NA_PROGRESS_A             = 1631,
-    LANG_OPVP_NA_CAPTURE_H              = 1632,
-    LANG_OPVP_NA_CAPTURE_A              = 1633,
-    LANG_OPVP_NA_DEFENSELESS            = 1634,
-
-    LANG_OPVP_SI_CAPTURE_H              = 1635,
-    LANG_OPVP_SI_CAPTURE_A              = 1636,
-
-    // FREE IDS                           1700-9999
-
-    // Use for not-in-official-sources patches
+    // Use for not-in-offcial-sources patches
     //                                    10000-10999
 
+    LANG_OPVP_SI_CAPTURE_H              = 10001,
+    LANG_OPVP_SI_CAPTURE_A              = 10002,
+
+    LANG_OPVP_EP_CAPTURE_NPT_H          = 10003,
+    LANG_OPVP_EP_CAPTURE_NPT_A          = 10004,
+    LANG_OPVP_EP_CAPTURE_EWT_H          = 10005,
+    LANG_OPVP_EP_CAPTURE_EWT_A          = 10006,
+    LANG_OPVP_EP_CAPTURE_CGT_H          = 10007,
+    LANG_OPVP_EP_CAPTURE_CGT_A          = 10008,
+    LANG_OPVP_EP_CAPTURE_PWT_H          = 10009,
+    LANG_OPVP_EP_CAPTURE_PWT_A          = 10010,
+    LANG_OPVP_EP_LOOSE_NPT_H            = 10011,
+    LANG_OPVP_EP_LOOSE_NPT_A            = 10012,
+    LANG_OPVP_EP_LOOSE_EWT_H            = 10013,
+    LANG_OPVP_EP_LOOSE_EWT_A            = 10014,
+    LANG_OPVP_EP_LOOSE_CGT_H            = 10015,
+    LANG_OPVP_EP_LOOSE_CGT_A            = 10016,
+    LANG_OPVP_EP_LOOSE_PWT_H            = 10017,
+    LANG_OPVP_EP_LOOSE_PWT_A            = 10018,
+
+    LANG_OPVP_HP_CAPTURE_OVERLOOK_H     = 10019,
+    LANG_OPVP_HP_CAPTURE_OVERLOOK_A     = 10020,
+    LANG_OPVP_HP_CAPTURE_STADIUM_H      = 10021,
+    LANG_OPVP_HP_CAPTURE_STADIUM_A      = 10022,
+    LANG_OPVP_HP_CAPTURE_BROKENHILL_H   = 10023,
+    LANG_OPVP_HP_CAPTURE_BROKENHILL_A   = 10024,
+    LANG_OPVP_HP_LOOSE_OVERLOOK_H       = 10025,
+    LANG_OPVP_HP_LOOSE_OVERLOOK_A       = 10026,
+    LANG_OPVP_HP_LOOSE_STADIUM_H        = 10027,
+    LANG_OPVP_HP_LOOSE_STADIUM_A        = 10028,
+    LANG_OPVP_HP_LOOSE_BROKENHILL_H     = 10029,
+    LANG_OPVP_HP_LOOSE_BROKENHILL_A     = 10030,
+
+    LANG_OPVP_ZM_CAPTURE_WEST_H         = 10031,
+    LANG_OPVP_ZM_CAPTURE_WEST_A         = 10032,
+    LANG_OPVP_ZM_CAPTURE_EAST_H         = 10033,
+    LANG_OPVP_ZM_CAPTURE_EAST_A         = 10034,
+    LANG_OPVP_ZM_CAPTURE_GY_H           = 10035,
+    LANG_OPVP_ZM_CAPTURE_GY_A           = 10036,
+    LANG_OPVP_ZM_LOOSE_WEST_H           = 10037,
+    LANG_OPVP_ZM_LOOSE_WEST_A           = 10038,
+    LANG_OPVP_ZM_LOOSE_EAST_H           = 10039,
+    LANG_OPVP_ZM_LOOSE_EAST_A           = 10040,
+    LANG_OPVP_ZM_LOOSE_GY_H             = 10041,
+    LANG_OPVP_ZM_LOOSE_GY_A             = 10042,
+
+    LANG_OPVP_TF_CAPTURE_H              = 10047,
+    LANG_OPVP_TF_CAPTURE_A              = 10048,
+    LANG_OPVP_TF_LOOSE_H                = 10049,
+    LANG_OPVP_TF_LOOSE_A                = 10050,
+
+    LANG_OPVP_NA_CAPTURE_H              = 10043,
+    LANG_OPVP_NA_CAPTURE_A              = 10044,
+    LANG_OPVP_NA_LOOSE_H                = 10045,
+    LANG_OPVP_NA_LOOSE_A                = 10046,
+
     // Use for custom patches             11000-11999
+    LANG_COMMAND_FRIEND                 = 11133,
+    LANG_COMMAND_FRIEND_ERROR           = 11134,
+    LANG_SYSTEMMESSAGE_MODERATOR        = 12000,
+    LANG_SYSTEMMESSAGE_GAMEMASTER       = 12001,
+    LANG_SYSTEMMESSAGE_ADMINISTRATOR    = 12002,
+    LANG_BAN_ACCOUNT_ANNOUNCE           = 17890,
+    LANG_PERMBAN_ACCOUNT_ANNOUNCE       = 17891,
+    LANG_BAN_CHARACTER_ANNOUNCE         = 17892,
+    LANG_PERMBAN_CHARACTER_ANNOUNCE     = 17893,
+    LANG_BAN_IP_ANNOUNCE                = 17894,
+    LANG_PERMBAN_IP_ANNOUNCE            = 17895,
+    LANG_MUTE_ANNOUNCE                  = 17896,
+    LANG_ARENA_STARTED_ANNOUNCE_WORLD   = 17898,
+
+    // SOTA
+    LANG_BG_SA_START_TWO_MINUTE             = 20000,
+    LANG_BG_SA_START_ONE_MINUTE             = 20001,
+    LANG_BG_SA_START_HALF_MINUTE            = 20002,
+    LANG_BG_SA_HAS_BEGUN                    = 20003,
+
+    LANG_BG_SA_GATE_ATTACK                  = 20004,
+    LANG_BG_SA_GATE_DAMAGE                  = 20005,
+    LANG_BG_SA_GATE_DETROYED                = 20006,
+
+    LANG_BG_SA_GATE_GREEN_EMERALD           = 20007,
+    LANG_BG_SA_GATE_BLUE_SAPHIRE            = 20008,
+    LANG_BG_SA_GATE_MAUVE_AMETHYST          = 20009,
+    LANG_BG_SA_GATE_RED_SUN_                = 20010,
+    LANG_BG_SA_GATE_YELLOW_MOON             = 20011,
+    LANG_BG_SA_GATE_ROOM_ANCIENT_SHRINE     = 20012,
+
+    LANG_BG_SA_EAST_GRAVEYARD               = 20013,
+    LANG_BG_SA_WEST_GRAVEYARD               = 20014,
+    LANG_BG_SA_SOUTH_GRAVEYARD              = 20015,
+
+    LANG_BG_SA_INSTALL_BOMB                 = 20016,
+
+    LANG_BG_SA_ALLIANCE_END_1ROUND          = 20017,
+    LANG_BG_SA_HORDE_END_1ROUND             = 20018,
+    LANG_BG_SA_ALLIANCE_END_2ROUND          = 20019,
+    LANG_BG_SA_HORDE_END_2ROUND             = 20020,
+    /*##############################################
+    #          Strings for SendWarningToAll        #
+    ##############################################*/
+    LANG_BG_SA_HORDE_EAST_CONQUESTED        = 20021,
+    LANG_BG_SA_HORDE_WEST_CONQUESTED        = 20022,
+    LANG_BG_SA_HORDE_SOUTH_CONQUESTED       = 20023,
+    LANG_BG_SA_ALLIANCE_EAST_CONQUESTED     = 20024,
+    LANG_BG_SA_ALLIANCE_WEST_CONQUESTED     = 20025,
+    LANG_BG_SA_ALLIANCE_SOUTH_CONQUESTED    = 20026,
+
+    LANG_BG_SA_GATE_ROOM_ANCIENT_SHRINE_DESTROYED = 20027,
+    LANG_BG_SA_GATE_GREEN_EMERALD_DESTROYED       = 20028,
+    LANG_BG_SA_GATE_BLUE_SAPHIRE_DESTROYED        = 20029,
+    LANG_BG_SA_GATE_MAUVE_AMETHYST_DESTROYED      = 20030,
+    LANG_BG_SA_GATE_RED_SUN_DESTROYED             = 20031,
+    LANG_BG_SA_GATE_YELLOW_MOON_DESTROYED         = 20032,
+    LANG_BG_SA_GATE_ROOM_ANCIENT_SHRINE_DAMAGED   = 20033,
+    LANG_BG_SA_GATE_GREEN_EMERALD_DAMAGED         = 20034,
+    LANG_BG_SA_GATE_BLUE_SAPHIRE_DAMAGED          = 20035,
+    LANG_BG_SA_GATE_MAUVE_AMETHYST_DAMAGED        = 20036,
+    LANG_BG_SA_GATE_RED_SUN_DAMAGED               = 20037,
+    LANG_BG_SA_GATE_YELLOW_MOON_DAMAGED           = 20038,
+
+    LANG_BG_SA_HORDE_TIMEOUT_END_1ROUND           = 20039,
+    LANG_BG_SA_ALLIANCE_TIMEOUT_END_1ROUND        = 20040,
+
+    LANG_BG_SA_HORDE_TIMEOUT_END_2ROUND           = 20041,
+    LANG_BG_SA_ALLIANCE_TIMEOUT_END_2ROUND        = 20042,
+
+    LANG_BG_SA_END_1ROUND                         = 20043,
+    LANG_BG_WIN_NONE                              = 20044,
+
+    // Isle of Conquest
+    LANG_BG_IC_START_TWO_MINUTES        = 20080,
+    LANG_BG_IC_START_ONE_MINUTE         = 20081,
+    LANG_BG_IC_START_HALF_MINUTE        = 20082,
+    LANG_BG_IC_HAS_BEGUN                = 20083,
+    LANG_BG_IC_ALLIANCE_KEEP            = 20084,
+    LANG_BG_IC_HORDE_KEEP               = 20085,
+    LANG_BG_IC_ALLIANCE_WINS            = 20086,
+    LANG_BG_IC_HORDE_WINS               = 20087,
+    LANG_BG_IC_A_WEST_GATE_DESTROYED    = 20088,
+    LANG_BG_IC_A_EAST_GATE_DESTROYED    = 20089,
+    LANG_BG_IC_A_FRONT_GATE_DESTROYED   = 20090,
+    LANG_BG_IC_H_WEST_GATE_DESTROYED    = 20091,
+    LANG_BG_IC_H_EAST_GATE_DESTROYED    = 20092,
+    LANG_BG_IC_H_FRONT_GATE_DESTROYED   = 20093,
+    LANG_BG_IC_NODE_ASSAULTED           = 20094,
+    LANG_BG_IC_NODE_DEFENDED            = 20095,
+    LANG_BG_IC_NODE_CLAIMED             = 20096,
+    LANG_BG_IC_NODE_TAKEN               = 20097,
+    LANG_BG_IC_NODE_WORKSHOP            = 20098,
+    LANG_BG_IC_NODE_DOCKS               = 20099,
+    LANG_BG_IC_NODE_REFINERY            = 20100,
+    LANG_BG_IC_NODE_QUARRY              = 20101,
+    LANG_BG_IC_NODE_HANGAR              = 20102,
 
     // NOT RESERVED IDS                   12000-1999999999
-    // `db_script_string` table index     2000000000-2000999999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
-    // For other tables maybe             2001000000-2147483647 (max index)
+    // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
+    // For other tables maybe             2000010000-2147483647 (max index)
 };
 #endif

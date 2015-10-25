@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,11 +30,12 @@
 #include <ace/Semaphore.h>
 #include <ace/Task.h>
 
+
 class MaNGOSsoapRunnable: public ACE_Based::Runnable
 {
     public:
         MaNGOSsoapRunnable() { }
-        void run() override;
+        void run();
         void setListenArguments(std::string host, uint16 port)
         {
             m_host = host;
@@ -48,30 +49,31 @@ class MaNGOSsoapRunnable: public ACE_Based::Runnable
 class SOAPWorkingThread : public ACE_Task<ACE_MT_SYNCH>
 {
     public:
-        SOAPWorkingThread()
+        SOAPWorkingThread ()
         { }
 
-        virtual int svc(void) override
+        virtual int svc (void)
         {
             while (1)
             {
-                ACE_Message_Block* mb = 0;
-                if (this->getq(mb) == -1)
+                ACE_Message_Block *mb = 0;
+                if (this->getq (mb) == -1)
                 {
-                    ACE_DEBUG((LM_INFO,
-                               ACE_TEXT("(%t) Shutting down\n")));
+                    ACE_DEBUG ((LM_INFO,
+                                ACE_TEXT ("(%t) Shutting down\n")));
                     break;
                 }
 
                 // Process the message.
-                process_message(mb);
+                process_message (mb);
             }
 
             return 0;
         }
     private:
-        void process_message(ACE_Message_Block* mb);
+        void process_message (ACE_Message_Block *mb);
 };
+
 
 class SOAPCommand
 {
@@ -79,6 +81,7 @@ class SOAPCommand
         SOAPCommand():
             pendingCommands(0, USYNC_THREAD, "pendingCommands")
         {
+
         }
         ~SOAPCommand()
         {

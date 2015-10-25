@@ -1,5 +1,5 @@
 /*
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,563 +16,609 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/*
- * @addtogroup TransportSystem
- * @{
- *
- * @file Vehicle.cpp
- * This file contains the code needed for CMaNGOS to support vehicles
- * Currently implemented
- * - Board to board a passenger onto a vehicle (includes checks)
- * - Unboard to unboard a passenger from the vehicle
- * - SwitchSeat to switch to another seat of the same vehicle
- * - CanBoard to check if a passenger can board a vehicle
- * - Internal helper to set the controlling and spells for a vehicle's seat
- * - Internal helper to control the available seats of a vehicle
- */
-
-#include "Vehicle.h"
 #include "Common.h"
-#include "SharedDefines.h"
-#include "ObjectGuid.h"
 #include "Log.h"
-#include "Unit.h"
-#include "Creature.h"
-#include "CreatureAI.h"
 #include "ObjectMgr.h"
-#include "SQLStorages.h"
+#include "Vehicle.h"
+#include "Unit.h"
+#include "CreatureAI.h"
 #include "Util.h"
-#include "movement/MoveSplineInit.h"
+#include "WorldPacket.h"
 #include "movement/MoveSpline.h"
-#include "MapManager.h"
-#include "TemporarySummon.h"
 
-void ObjectMgr::LoadVehicleAccessory()
+VehicleInfo::VehicleInfo(VehicleEntry const* entry) :
+    m_vehicleEntry(entry)
 {
-    sVehicleAccessoryStorage.Load();
+}
 
-    sLog.outString(">> Loaded %u vehicle accessories", sVehicleAccessoryStorage.GetRecordCount());
-    sLog.outString();
-
-    // Check content
-    for (SQLMultiStorage::SQLSIterator<VehicleAccessory> itr = sVehicleAccessoryStorage.getDataBegin<VehicleAccessory>(); itr < sVehicleAccessoryStorage.getDataEnd<VehicleAccessory>(); ++itr)
+VehicleKit::VehicleKit(Unit* base) :  m_pBase(base), m_uiNumFreeSeats(0)
+{
+    for (uint32 i = 0; i < MAX_VEHICLE_SEAT; ++i)
     {
-        if (!sCreatureStorage.LookupEntry<CreatureInfo>(itr->vehicleEntry))
-        {
-            sLog.outErrorDb("Table `vehicle_accessory` has entry (vehicle entry: %u, seat %u, passenger %u) where vehicle_entry is invalid, skip vehicle.", itr->vehicleEntry, itr->seatId, itr->passengerEntry);
-            sVehicleAccessoryStorage.EraseEntry(itr->vehicleEntry);
+        uint32 seatId = GetBase()->GetVehicleInfo()->GetEntry()->m_seatID[i];
+
+        if (!seatId)
             continue;
+
+
+        if (VehicleSeatEntry const *seatInfo = sVehicleSeatStore.LookupEntry(seatId))
+        {
+            m_Seats.insert(std::make_pair(i, VehicleSeat(seatInfo)));
+
+            if (seatInfo->IsUsable())
+                ++m_uiNumFreeSeats;
         }
-        if (!sCreatureStorage.LookupEntry<CreatureInfo>(itr->passengerEntry))
+    }
+
+    if (base)
+    {
+        if (GetBase()->GetVehicleInfo()->GetEntry()->m_flags & VEHICLE_FLAG_NO_STRAFE)
+            GetBase()->m_movementInfo.AddMovementFlag2(MOVEFLAG2_NO_STRAFE);
+
+        if (GetBase()->GetVehicleInfo()->GetEntry()->m_flags & VEHICLE_FLAG_NO_JUMPING)
+            GetBase()->m_movementInfo.AddMovementFlag2(MOVEFLAG2_NO_JUMPING);
+
+        if (GetBase()->GetVehicleInfo()->GetEntry()->m_flags & VEHICLE_FLAG_FULLSPEEDTURNING)
+            GetBase()->m_movementInfo.AddMovementFlag2(MOVEFLAG2_FULLSPEEDTURNING);
+
+        if (GetBase()->GetVehicleInfo()->GetEntry()->m_flags & VEHICLE_FLAG_ALLOW_PITCHING)
+            GetBase()->m_movementInfo.AddMovementFlag2(MOVEFLAG2_ALLOW_PITCHING);
+
+        if (GetBase()->GetVehicleInfo()->GetEntry()->m_flags & VEHICLE_FLAG_ALLOW_PITCHING)
+            GetBase()->m_movementInfo.AddMovementFlag2(MOVEFLAG2_FULLSPEEDPITCHING);
+
+    }
+    SetDestination();
+}
+
+VehicleKit::~VehicleKit()
+{
+}
+
+void VehicleKit::RemoveAllPassengers()
+{
+    for (SeatMap::iterator itr = m_Seats.begin(); itr != m_Seats.end(); ++itr)
+    {
+        if (Unit *passenger = itr->second.passenger)
         {
-            sLog.outErrorDb("Table `vehicle_accessory` has entry (vehicle entry: %u, seat %u, passenger %u) where accessory_entry is invalid, skip vehicle.", itr->vehicleEntry, itr->seatId, itr->passengerEntry);
-            sVehicleAccessoryStorage.EraseEntry(itr->vehicleEntry);
-            continue;
-        }
-        if (itr->seatId >= MAX_VEHICLE_SEAT)
-        {
-            sLog.outErrorDb("Table `vehicle_accessory` has entry (vehicle entry: %u, seat %u, passenger %u) where seat is invalid (must be between 0 and %u), skip vehicle.", itr->vehicleEntry, itr->seatId, itr->passengerEntry, MAX_VEHICLE_SEAT - 1);
-            sVehicleAccessoryStorage.EraseEntry(itr->vehicleEntry);
-            continue;
+            passenger->ExitVehicle();
+
+            // remove creatures of player mounts
+            if (passenger->GetTypeId() == TYPEID_UNIT)
+                passenger->AddObjectToRemoveList();
         }
     }
 }
 
-/*
- * Constructor of VehicleInfo
- *
- * @param owner         MUST be provided owner of the vehicle (type Unit)
- * @param vehicleEntry  MUST be provided dbc-entry of the vehicle
- * @param overwriteNpcEntry Use to overwrite the GetEntry() result for selecting associated passengers
- *
- * This function will initialise the VehicleInfo of the vehicle owner
- * Also the seat-map is created here
- */
-VehicleInfo::VehicleInfo(Unit* owner, VehicleEntry const* vehicleEntry, uint32 overwriteNpcEntry) : TransportBase(owner),
-    m_vehicleEntry(vehicleEntry),
-    m_creatureSeats(0),
-    m_playerSeats(0),
-    m_overwriteNpcEntry(overwriteNpcEntry),
-    m_isInitialized(false)
+bool VehicleKit::HasEmptySeat(int8 seatId) const
 {
-    MANGOS_ASSERT(vehicleEntry);
+    if (seatId < 0)
+        return (GetNextEmptySeat(0,true) != -1);
 
-    // Initial fill of available seats for the vehicle
-    for (uint8 i = 0; i < MAX_VEHICLE_SEAT; ++i)
+    SeatMap::const_iterator seat = m_Seats.find(seatId);
+    // need add check on accessories-only seats...
+
+    if (seat == m_Seats.end())
+        return false;
+
+    return !seat->second.passenger;
+}
+
+Unit *VehicleKit::GetPassenger(int8 seatId) const
+{
+    SeatMap::const_iterator seat = m_Seats.find(seatId);
+
+    if (seat == m_Seats.end())
+        return NULL;
+
+    return seat->second.passenger;
+}
+
+int8 VehicleKit::GetNextEmptySeat(int8 seatId, bool next) const
+{
+
+    if (m_Seats.empty() || seatId >= MAX_VEHICLE_SEAT)
+        return -1;
+
+    // some vehicles (those - found in ICC) dont return proper seatID
+    // maybe some wrong flags interpretation? (usable)
+    if (m_pBase->GetEntry() == 37672 || m_pBase->GetEntry() == 38285 ||
+        m_pBase->GetEntry() == 36609 || m_pBase->GetEntry() == 36598 ||
+        m_pBase->GetEntry() == 37187)
     {
-        if (uint32 seatId = vehicleEntry->m_seatID[i])
-        {
-            if (VehicleSeatEntry const* seatEntry = sVehicleSeatStore.LookupEntry(seatId))
-            {
-                m_vehicleSeats.insert(VehicleSeatMap::value_type(i, seatEntry));
-
-                if (IsUsableSeatForCreature(seatEntry->m_flags))
-                    m_creatureSeats |= 1 << i;
-
-                if (IsUsableSeatForPlayer(seatEntry->m_flags))
-                    m_playerSeats |= 1 << i;
-            }
-        }
+        return 0;
     }
-}
 
-VehicleInfo::~VehicleInfo()
-{
-    ((Unit*)m_owner)->RemoveSpellsCausingAura(SPELL_AURA_CONTROL_VEHICLE);
-
-    RemoveAccessoriesFromMap();                             // Remove accessories (for example required with player vehicles)
-}
-
-void VehicleInfo::Initialize()
-{
-    if (!m_overwriteNpcEntry)
-        m_overwriteNpcEntry = m_owner->GetEntry();
-
-    // Loading passengers (rough version only!)
-    SQLMultiStorage::SQLMSIteratorBounds<VehicleAccessory> bounds = sVehicleAccessoryStorage.getBounds<VehicleAccessory>(m_overwriteNpcEntry);
-    for (SQLMultiStorage::SQLMultiSIterator<VehicleAccessory> itr = bounds.first; itr != bounds.second; ++itr)
+    if (next)
     {
-        if (Creature* summoned = m_owner->SummonCreature(itr->passengerEntry, m_owner->GetPositionX(), m_owner->GetPositionY(), m_owner->GetPositionZ(), 2 * m_owner->GetOrientation(), TEMPSUMMON_DEAD_DESPAWN, 0))
-        {
-            DEBUG_LOG("VehicleInfo(of %s)::Initialize: Load vehicle accessory %s onto seat %u", m_owner->GetGuidStr().c_str(), summoned->GetGuidStr().c_str(), itr->seatId);
-            m_accessoryGuids.insert(summoned->GetObjectGuid());
-            int32 basepoint0 = itr->seatId + 1;
-            summoned->CastCustomSpell((Unit*)m_owner, SPELL_RIDE_VEHICLE_HARDCODED, &basepoint0, NULL, NULL, true);
-        }
+        for (SeatMap::const_iterator seat = m_Seats.begin(); seat != m_Seats.end(); ++seat)
+            if ((seatId < 0 || seat->first >= seatId) && !seat->second.passenger && seat->second.seatInfo->IsUsable())
+                return seat->first;
     }
-    m_isInitialized = true;
+    else
+    {
+        for (SeatMap::const_reverse_iterator seat = m_Seats.rbegin(); seat != m_Seats.rend(); ++seat)
+            if ((seatId < 0 || seat->first <= seatId) && !seat->second.passenger && seat->second.seatInfo->IsUsable())
+                return seat->first;
+    }
+
+    return -1;
 }
 
-/*
- * This function will board a passenger onto a vehicle
- *
- * @param passenger MUST be provided. This Unit will be boarded onto the vehicles (if it checks out)
- * @param seat      Seat to which the passenger will be boarded (if can, elsewise an alternative will be selected if possible)
- */
-void VehicleInfo::Board(Unit* passenger, uint8 seat)
+bool VehicleKit::AddPassenger(Unit *passenger, int8 seatId)
 {
-    MANGOS_ASSERT(passenger);
+    SeatMap::iterator seat;
 
-    DEBUG_LOG("VehicleInfo(of %s)::Board: Try to board passenger %s to seat %u", m_owner->GetGuidStr().c_str(), passenger->GetGuidStr().c_str(), seat);
-
-    // This check is also called in Spell::CheckCast()
-    if (!CanBoard(passenger))
-        return;
-
-    // Use the planned seat only if the seat is valid, possible to choose and empty
-    if (!IsSeatAvailableFor(passenger, seat))
-        if (!GetUsableSeatFor(passenger, seat))
-            return;
-
-    VehicleSeatEntry const* seatEntry = GetSeatEntry(seat);
-    MANGOS_ASSERT(seatEntry);
-
-    // ToDo: Unboard passenger from a MOTransport when they are properly implemented
-    /*if (TransportInfo* transportInfo = passenger->GetTransportInfo())
+    if (seatId < 0) // no specific seat requirement
     {
-        WorldObject* transporter = transportInfo->GetTransport();
+        for (seat = m_Seats.begin(); seat != m_Seats.end(); ++seat)
+        {
+            if (!seat->second.passenger && (seat->second.seatInfo->IsUsable() || (seat->second.seatInfo->m_flags & SEAT_FLAG_UNCONTROLLED)))
+                break;
+        }
 
-        // Must be a MO transporter
-        MANGOS_ASSERT(transporter->GetObjectGuid().IsMOTransport());
+        if (seat == m_Seats.end()) // no available seat
+            return false;
+    }
+    else
+    {
+        seat = m_Seats.find(seatId);
 
-        ((Transport*)transporter)->UnBoardPassenger(passenger);
-    }*/
+        if (seat == m_Seats.end())
+            return false;
 
-    DEBUG_LOG("VehicleInfo::Board: Board passenger: %s to seat %u", passenger->GetGuidStr().c_str(), seat);
+        if (seat->second.passenger)
+            return false;
+    }
 
-    // Calculate passengers local position
-    float lx, ly, lz, lo;
-    CalculateBoardingPositionOf(passenger->GetPositionX(), passenger->GetPositionY(), passenger->GetPositionZ(), passenger->GetOrientation(), lx, ly, lz, lo);
+    VehicleSeatEntry const* seatInfo = seat->second.seatInfo;
+    seat->second.passenger = passenger;
 
-    BoardPassenger(passenger, lx, ly, lz, lo, seat);        // Use TransportBase to store the passenger
+    if (!(seatInfo->m_flags & SEAT_FLAG_FREE_ACTION))
+        passenger->addUnitState(UNIT_STAT_ON_VEHICLE);
 
-    // Set data for createobject packets
+    m_pBase->SetPhaseMask(passenger->GetPhaseMask(), true);
+
+    passenger->m_movementInfo.ClearTransportData();
     passenger->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
-    passenger->m_movementInfo.SetTransportData(m_owner->GetObjectGuid(), lx, ly, lz, lo, 0, seat);
+    if (GetBase()->m_movementInfo.HasMovementFlag(MOVEFLAG_ONTRANSPORT))
+    {
+            passenger->m_movementInfo.SetTransportData(GetBase()->m_movementInfo.GetTransportGuid(),
+//            passenger->m_movementInfo.SetTransportData(GetBase()->GetObjectGuid(),
+            seatInfo->m_attachmentOffsetX + GetBase()->m_movementInfo.GetTransportPos()->x,
+            seatInfo->m_attachmentOffsetY + GetBase()->m_movementInfo.GetTransportPos()->y,
+            seatInfo->m_attachmentOffsetZ + GetBase()->m_movementInfo.GetTransportPos()->z,
+            seatInfo->m_passengerYaw + GetBase()->m_movementInfo.GetTransportPos()->o,
+            WorldTimer::getMSTime(), seat->first, seatInfo);
+
+            DEBUG_LOG("VehicleKit::AddPassenger passenger %s transport offset on %s setted to %f %f %f %f (parent - %s)",
+            passenger->GetObjectGuid().GetString().c_str(),
+            passenger->m_movementInfo.GetTransportGuid().GetString().c_str(),
+            passenger->m_movementInfo.GetTransportPos()->x,
+            passenger->m_movementInfo.GetTransportPos()->y,
+            passenger->m_movementInfo.GetTransportPos()->z,
+            passenger->m_movementInfo.GetTransportPos()->o,
+            GetBase()->m_movementInfo.GetTransportGuid().GetString().c_str());
+    }
+    else if (passenger->GetTypeId() == TYPEID_UNIT && b_dstSet)
+    {
+        passenger->m_movementInfo.SetTransportData(m_pBase->GetObjectGuid(),
+        seatInfo->m_attachmentOffsetX + m_dst_x, seatInfo->m_attachmentOffsetY + m_dst_y, seatInfo->m_attachmentOffsetZ + m_dst_z,
+        seatInfo->m_passengerYaw + m_dst_o, WorldTimer::getMSTime(), seat->first, seatInfo);
+    }
+    else
+    {
+        passenger->m_movementInfo.SetTransportData(m_pBase->GetObjectGuid(),
+        seatInfo->m_attachmentOffsetX, seatInfo->m_attachmentOffsetY, seatInfo->m_attachmentOffsetZ,
+        seatInfo->m_passengerYaw, WorldTimer::getMSTime(), seat->first, seatInfo);
+    }
 
     if (passenger->GetTypeId() == TYPEID_PLAYER)
     {
-        Player* pPlayer = (Player*)passenger;
-        pPlayer->RemovePet(PET_SAVE_AS_CURRENT);
+        ((Player*)passenger)->GetCamera().SetView(m_pBase);
 
-        WorldPacket data(SMSG_ON_CANCEL_EXPECTED_RIDE_VEHICLE_AURA);
-        pPlayer->GetSession()->SendPacket(&data);
-
-        // SMSG_BREAK_TARGET (?)
+        WorldPacket data(SMSG_FORCE_MOVE_ROOT, 8+4);
+        data << passenger->GetPackGUID();
+        data << uint32((passenger->m_movementInfo.GetVehicleSeatFlags() & SEAT_FLAG_CAN_CAST) ? 2 : 0);
+        passenger->SendMessageToSet(&data, true);
     }
 
-    if (!passenger->IsRooted())
-        passenger->SetRoot(true);
-
-    Movement::MoveSplineInit init(*passenger);
-    init.MoveTo(0.0f, 0.0f, 0.0f);                          // ToDo: Set correct local coords
-    init.SetFacing(0.0f);                                   // local orientation ? ToDo: Set proper orientation!
-    init.SetBoardVehicle();
-    init.Launch();
-
-    // Apply passenger modifications
-    ApplySeatMods(passenger, seatEntry->m_flags);
-}
-
-/*
- * This function will switch the seat of a passenger on the same vehicle
- *
- * @param passenger MUST be provided. This Unit will change its seat on the vehicle
- * @param seat      Seat to which the passenger will be switched
- */
-void VehicleInfo::SwitchSeat(Unit* passenger, uint8 seat)
-{
-    MANGOS_ASSERT(passenger);
-
-    DEBUG_LOG("VehicleInfo::SwitchSeat: passenger: %s try to switch to seat %u", passenger->GetGuidStr().c_str(), seat);
-
-    // Switching seats is not possible
-    if (m_vehicleEntry->m_flags & VEHICLE_FLAG_DISABLE_SWITCH)
-        return;
-
-    PassengerMap::const_iterator itr = m_passengers.find(passenger);
-    MANGOS_ASSERT(itr != m_passengers.end());
-
-    // We are already boarded to this seat
-    if (itr->second->GetTransportSeat() == seat)
-        return;
-
-    // Check if it's a valid seat
-    if (!IsSeatAvailableFor(passenger, seat))
-        return;
-
-    VehicleSeatEntry const* seatEntry = GetSeatEntry(itr->second->GetTransportSeat());
-    MANGOS_ASSERT(seatEntry);
-
-    // Switching seats is only allowed if this flag is set
-    if (~seatEntry->m_flags & SEAT_FLAG_CAN_SWITCH)
-        return;
-
-    // Remove passenger modifications of the old seat
-    RemoveSeatMods(passenger, seatEntry->m_flags);
-
-    // Set to new seat
-    itr->second->SetTransportSeat(seat);
-
-    Movement::MoveSplineInit init(*passenger);
-    init.MoveTo(0.0f, 0.0f, 0.0f);                          // ToDo: Set correct local coords
-    //if (oldorientation != neworientation) (?)
-    //init.SetFacing(0.0f);                                 // local orientation ? ToDo: Set proper orientation!
-    // It seems that Seat switching is sent without SplineFlag BoardVehicle
-    init.Launch();
-
-    // Get seatEntry of new seat
-    seatEntry = GetSeatEntry(seat);
-    MANGOS_ASSERT(seatEntry);
-
-    // Apply passenger modifications of the new seat
-    ApplySeatMods(passenger, seatEntry->m_flags);
-}
-
-/*
- * This function will Unboard a passenger
- *
- * @param passenger         MUST be provided. This Unit will be unboarded from the vehicle
- * @param changeVehicle     If set, the passenger is expected to be directly boarded to another vehicle,
- *                          and hence he will not be unboarded but only removed from this vehicle.
- */
-void VehicleInfo::UnBoard(Unit* passenger, bool changeVehicle)
-{
-    MANGOS_ASSERT(passenger);
-
-    DEBUG_LOG("VehicleInfo::Unboard: passenger: %s", passenger->GetGuidStr().c_str());
-
-    PassengerMap::const_iterator itr = m_passengers.find(passenger);
-    MANGOS_ASSERT(itr != m_passengers.end());
-
-    VehicleSeatEntry const* seatEntry = GetSeatEntry(itr->second->GetTransportSeat());
-    MANGOS_ASSERT(seatEntry);
-
-    UnBoardPassenger(passenger);                            // Use TransportBase to remove the passenger from storage list
-
-    if (!changeVehicle)                                     // Send expected unboarding packages
+    if (seat->second.IsProtectPassenger())
     {
-        // Update movementInfo
-        passenger->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
-        passenger->m_movementInfo.ClearTransportData();
+        switch (m_pBase->GetEntry())
+        {
+            case 33651:                                     // VX 001
+            case 33432:                                     // Leviathan MX
+            case 33118:                                     // Ignis (Ulduar)
+            case 32934:                                     // Kologarn Right Arm (Ulduar)
+            case 30234:                                     // Nexus Lord's Hover Disk (Eye of Eternity, Malygos Encounter)
+            case 30248:                                     // Scion's of Eternity Hover Disk (Eye of Eternity, Malygos Encounter)
+                break;
+            case 28817:
+            default:
+                passenger->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                break;
+        }
+        passenger->RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT);
+    }
+
+    if (seatInfo->m_flags & SEAT_FLAG_CAN_CONTROL)
+    {
+        if (!(m_pBase->GetVehicleInfo()->GetEntry()->m_flags & (VEHICLE_FLAG_ACCESSORY)))
+        {
+            m_pBase->StopMoving();
+            m_pBase->GetMotionMaster()->Clear();
+            m_pBase->CombatStop(true);
+        }
+        m_pBase->DeleteThreatList();
+        m_pBase->getHostileRefManager().deleteReferences();
+        m_pBase->SetCharmerGuid(passenger->GetObjectGuid());
+        m_pBase->addUnitState(UNIT_STAT_CONTROLLED);
+
+        passenger->SetCharm(m_pBase);
+
+        if (m_pBase->HasAuraType(SPELL_AURA_FLY) || m_pBase->HasAuraType(SPELL_AURA_MOD_FLIGHT_SPEED))
+        {
+            WorldPacket data;
+            data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
+            data << m_pBase->GetPackGUID();
+            data << (uint32)(0);
+            m_pBase->SendMessageToSet(&data,false);
+        }
 
         if (passenger->GetTypeId() == TYPEID_PLAYER)
         {
-            Player* pPlayer = (Player*)passenger;
-            pPlayer->ResummonPetTemporaryUnSummonedIfAny();
+            m_pBase->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
 
-            // SMSG_PET_DISMISS_SOUND (?)
+            if (CharmInfo* charmInfo = m_pBase->InitCharmInfo(m_pBase))
+            {
+                charmInfo->SetState(CHARM_STATE_ACTION,ACTIONS_DISABLE);
+                charmInfo->InitVehicleCreateSpells(seat->first);
+            }
+
+            Player* player = (Player*)passenger;
+            player->SetMover(m_pBase);
+            player->SetClientControl(m_pBase, 1);
+            player->VehicleSpellInitialize();
         }
 
-        if (passenger->IsRooted())
-            passenger->SetRoot(false);
+        if(!(((Creature*)m_pBase)->GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_KEEP_AI))
+            ((Creature*)m_pBase)->AIM_Initialize();
 
-        Movement::MoveSplineInit init(*passenger);
-        // ToDo: Set proper unboard coordinates
-        init.MoveTo(m_owner->GetPositionX(), m_owner->GetPositionY(), m_owner->GetPositionZ());
-        init.SetExitVehicle();
-        init.Launch();
-
-        // Despawn if passenger was accessory
-        if (passenger->GetTypeId() == TYPEID_UNIT && m_accessoryGuids.find(passenger->GetObjectGuid()) != m_accessoryGuids.end())
+        if (m_pBase->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE))
         {
-            Creature* cPassenger = static_cast<Creature*>(passenger);
-            // TODO Same TODO as in VehicleInfo::RemoveAccessoriesFromMap
-            cPassenger->ForcedDespawn(5000);
-            m_accessoryGuids.erase(passenger->GetObjectGuid());
+            WorldPacket data2(SMSG_FORCE_MOVE_ROOT, 8+4);
+            data2 << m_pBase->GetPackGUID();
+            data2 << (uint32)(2);
+            m_pBase->SendMessageToSet(&data2,false);
         }
+        else if (passenger->m_movementInfo.GetMovementFlags() & MOVEFLAG_WALK_MODE)
+            ((Creature*)m_pBase)->SetWalk(true);
+        else
+            ((Creature*)m_pBase)->SetWalk(false);
+
     }
-
-    // Remove passenger modifications
-    RemoveSeatMods(passenger, seatEntry->m_flags);
-
-    // Some creature vehicles get despawned after passenger unboarding
-    if (m_owner->GetTypeId() == TYPEID_UNIT)
+    else if (seatInfo->m_flags & SEAT_FLAG_FREE_ACTION || seatInfo->m_flags & SEAT_FLAG_CAN_ATTACK)
     {
-        // TODO: Guesswork, but seems to be fairly near correct
-        // Only if the passenger was on control seat? Also depending on some flags
-        if ((seatEntry->m_flags & SEAT_FLAG_CAN_CONTROL) &&
-                !(m_vehicleEntry->m_flags & (VEHICLE_FLAG_UNK4 | VEHICLE_FLAG_UNK20)))
+        if (passenger->GetTypeId() == TYPEID_PLAYER)
         {
-            if (((Creature*)m_owner)->IsTemporarySummon())
-                ((Creature*)m_owner)->ForcedDespawn(1000);
+            Player* player = (Player*)passenger;
+            player->SetClientControl(m_pBase, 0);
+        }
+    }
+
+    passenger->SendMonsterMoveTransport(m_pBase, SPLINETYPE_FACINGANGLE, SPLINEFLAG_TRANSPORT, 0, 0.0f);
+
+    RelocatePassengers(m_pBase->GetPositionX(), m_pBase->GetPositionY(), m_pBase->GetPositionZ()+0.5f, m_pBase->GetOrientation());
+
+    UpdateFreeSeatCount();
+
+    if (m_pBase->GetTypeId() == TYPEID_UNIT)
+    {
+        if (((Creature*)m_pBase)->AI())
+            ((Creature*)m_pBase)->AI()->PassengerBoarded(passenger, seat->first, true);
+    }
+
+    if (b_dstSet && seatInfo->m_flagsB & VEHICLE_SEAT_FLAG_B_EJECTABLE_FORCED)
+    {
+        uint32 delay = seatInfo->m_exitMaxDuration * IN_MILLISECONDS;
+        m_pBase->AddEvent(new PassengerEjectEvent(seatId,*m_pBase), delay);
+        DEBUG_LOG("Vehicle::AddPassenger eject event for %s added, delay %u",passenger->GetObjectGuid().GetString().c_str(), delay);
+    }
+
+    return true;
+}
+
+void VehicleKit::RemovePassenger(Unit *passenger, bool dismount)
+{
+    SeatMap::iterator seat;
+
+    for (seat = m_Seats.begin(); seat != m_Seats.end(); ++seat)
+        if (seat->second.passenger == passenger)
+            break;
+
+    if (seat == m_Seats.end())
+        return;
+
+    seat->second.passenger = NULL;
+    passenger->clearUnitState(UNIT_STAT_ON_VEHICLE);
+
+    passenger->m_movementInfo.ClearTransportData();
+    passenger->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
+
+    if (seat->second.IsProtectPassenger())
+        if (passenger->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
+            passenger->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+
+    if (seat->second.seatInfo->m_flags & SEAT_FLAG_CAN_CONTROL)
+    {
+
+        passenger->SetCharm(NULL);
+        passenger->RemoveSpellsCausingAura(SPELL_AURA_CONTROL_VEHICLE);
+
+        m_pBase->SetCharmerGuid(ObjectGuid());
+        m_pBase->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+        m_pBase->clearUnitState(UNIT_STAT_CONTROLLED);
+
+        if (passenger->GetTypeId() == TYPEID_PLAYER)
+        {
+            Player* player = (Player*)passenger;
+            player->SetClientControl(m_pBase, 0);
+            player->RemovePetActionBar();
+        }
+
+        if(!(((Creature*)m_pBase)->GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_KEEP_AI))
+            ((Creature*)m_pBase)->AIM_Initialize();
+    }
+
+    if (passenger->GetTypeId() == TYPEID_PLAYER)
+    {
+        Player* player = (Player*)passenger;
+        player->GetCamera().ResetView();
+
+        WorldPacket data(SMSG_FORCE_MOVE_UNROOT, 8+4);
+        data << passenger->GetPackGUID();
+        data << uint32(2);
+        passenger->SendMessageToSet(&data, true);
+
+        player->SetMover(player);
+    }
+    UpdateFreeSeatCount();
+
+    if (m_pBase->GetTypeId() == TYPEID_UNIT)
+    {
+        if (((Creature*)m_pBase)->AI())
+            ((Creature*)m_pBase)->AI()->PassengerBoarded(passenger, seat->first, false);
+    }
+    if (dismount)
+    {
+        Dismount(passenger, seat->second.seatInfo);
+        // only for flyable vehicles
+        if (m_pBase->m_movementInfo.HasMovementFlag(MOVEFLAG_FLYING))
+            m_pBase->CastSpell(passenger, 45472, true);    // Parachute
+    }
+}
+
+void VehicleKit::Reset()
+{
+    RemoveAllPassengers();
+    InstallAllAccessories(m_pBase->GetEntry());
+    UpdateFreeSeatCount();
+}
+
+void VehicleKit::InstallAllAccessories(uint32 entry)
+{
+    VehicleAccessoryList const* mVehicleList = sObjectMgr.GetVehicleAccessoryList(entry);
+    if (!mVehicleList)
+        return;
+
+    for (VehicleAccessoryList::const_iterator itr = mVehicleList->begin(); itr != mVehicleList->end(); ++itr)
+        InstallAccessory(&*itr);
+}
+
+void VehicleKit::InstallAccessory(VehicleAccessory const* accessory)
+{
+    if (Unit *passenger = GetPassenger(accessory->uiSeat))
+    {
+        // already installed
+        if (passenger->GetEntry() == accessory->uiAccessory)
+            return;
+
+        passenger->ExitVehicle();
+    }
+
+    if (Creature* summoned = m_pBase->SummonCreature(accessory->uiAccessory,
+        m_pBase->GetPositionX() + accessory->m_offsetX, m_pBase->GetPositionY() + accessory->m_offsetY, m_pBase->GetPositionZ() + accessory->m_offsetZ, m_pBase->GetOrientation() + accessory->m_offsetX,
+        TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000))
+    {
+        SetDestination(accessory->m_offsetX,accessory->m_offsetY,accessory->m_offsetZ,accessory->m_offsetO,0.0f,0.0f);
+        summoned->SetCreatorGuid(ObjectGuid());
+        summoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
+        summoned->EnterVehicle(m_pBase, accessory->uiSeat);
+        SetDestination();
+        if (summoned->GetVehicle())
+            DEBUG_LOG("Vehicle::InstallAccessory %s accessory added, seat %u of %s",summoned->GetObjectGuid().GetString().c_str(), accessory->uiSeat, m_pBase->GetObjectGuid().GetString().c_str());
+        else
+        {
+            sLog.outError("Vehicle::InstallAccessory cannot install %s to seat %u of %s",summoned->GetObjectGuid().GetString().c_str(), accessory->uiSeat, m_pBase->GetObjectGuid().GetString().c_str());
+            summoned->ForcedDespawn();
+        }
+    }
+    else
+        sLog.outError("Vehicle::InstallAccessory cannot summon creature id %u (seat %u of %s)",accessory->uiAccessory, accessory->uiSeat,m_pBase->GetObjectGuid().GetString().c_str());
+}
+
+void VehicleKit::UpdateFreeSeatCount()
+{
+    m_uiNumFreeSeats = 0;
+
+    for (SeatMap::const_iterator itr = m_Seats.begin(); itr != m_Seats.end(); ++itr)
+    {
+        if (!itr->second.passenger && itr->second.seatInfo->IsUsable())
+            ++m_uiNumFreeSeats;
+    }
+
+    uint32 flag = m_pBase->GetTypeId() == TYPEID_PLAYER ? UNIT_NPC_FLAG_PLAYER_VEHICLE : UNIT_NPC_FLAG_SPELLCLICK;
+
+    if (m_uiNumFreeSeats)
+        m_pBase->SetFlag(UNIT_NPC_FLAGS, flag);
+    else
+        m_pBase->RemoveFlag(UNIT_NPC_FLAGS, flag);
+}
+
+void VehicleKit::RelocatePassengers(float x, float y, float z, float ang)
+{
+    for (SeatMap::const_iterator itr = m_Seats.begin(); itr != m_Seats.end(); ++itr)
+    {
+        if (Unit *passenger = itr->second.passenger)
+        {
+            float px = x + passenger->m_movementInfo.GetTransportPos()->x;
+            float py = y + passenger->m_movementInfo.GetTransportPos()->y;
+            float pz = z + passenger->m_movementInfo.GetTransportPos()->z;
+            float po = ang + passenger->m_movementInfo.GetTransportPos()->o;
+//            passenger->UpdateAllowedPositionZ(px, py, pz);
+            passenger->SetPosition(px, py, pz, po);
         }
     }
 }
 
-/*
- * This function will check if a passenger can be boarded
- *
- * @param passenger         Unit that attempts to board onto a vehicle
- */
-bool VehicleInfo::CanBoard(Unit* passenger) const
+VehicleSeatEntry const* VehicleKit::GetSeatInfo(Unit* passenger)
 {
-    if (!passenger)
-        return false;
-
-    // Passenger is this vehicle
-    if (passenger == m_owner)
-        return false;
-
-    // Passenger is already on this vehicle (in this case switching seats is required)
-    if (passenger->IsBoarded() && passenger->GetTransportInfo()->GetTransport() == m_owner)
-        return false;
-
-    // Prevent circular boarding: passenger (could only be vehicle) must not have m_owner on board
-    if (passenger->IsVehicle() && passenger->GetVehicleInfo()->HasOnBoard(m_owner))
-        return false;
-
-    // Check if we have at least one empty seat
-    if (!GetEmptySeats())
-        return false;
-
-    // Passenger is already boarded
-    if (m_passengers.find(passenger) != m_passengers.end())
-        return false;
-
-    // Check for empty player seats
-    if (passenger->GetTypeId() == TYPEID_PLAYER)
-        return GetEmptySeatsMask() & m_playerSeats;
-
-    // Check for empty creature seats
-    return GetEmptySeatsMask() & m_creatureSeats;
-}
-
-Unit* VehicleInfo::GetPassenger(uint8 seat) const
-{
-    for (PassengerMap::const_iterator itr = m_passengers.begin(); itr != m_passengers.end(); ++itr)
-        if (itr->second->GetTransportSeat() == seat)
-            return (Unit*)itr->first;
-
+    for (SeatMap::iterator itr = m_Seats.begin(); itr != m_Seats.end(); ++itr)
+    {
+        if (Unit *_passenger = itr->second.passenger)
+            if (_passenger == passenger)
+                return itr->second.seatInfo;
+    }
     return NULL;
 }
 
-// Helper function to undo the turning of the vehicle to calculate a relative position of the passenger when boarding
-void VehicleInfo::CalculateBoardingPositionOf(float gx, float gy, float gz, float go, float& lx, float& ly, float& lz, float& lo) const
+int8 VehicleKit::GetSeatId(Unit* passenger)
 {
-    NormalizeRotatedPosition(gx - m_owner->GetPositionX(), gy - m_owner->GetPositionY(), lx, ly);
-
-    lz = gz - m_owner->GetPositionZ();
-    lo = MapManager::NormalizeOrientation(go - m_owner->GetOrientation());
-}
-
-void VehicleInfo::RemoveAccessoriesFromMap()
-{
-    // Remove all accessories
-    for (GuidSet::const_iterator itr = m_accessoryGuids.begin(); itr != m_accessoryGuids.end(); ++itr)
+    for (SeatMap::iterator itr = m_Seats.begin(); itr != m_Seats.end(); ++itr)
     {
-        if (Creature* pAccessory = m_owner->GetMap()->GetCreature(*itr))
-        {
-            // TODO - unclear how long to despawn, also maybe some flag etc depending
-            pAccessory->ForcedDespawn(5000);
-        }
+        if (Unit *_passenger = itr->second.passenger)
+            if (_passenger == passenger)
+                return itr->first;
     }
-    m_accessoryGuids.clear();
-    m_isInitialized = false;
+    return -1;
 }
 
-/* ************************************************************************************************
- *          Helper function for seat control
- * ***********************************************************************************************/
-
-/// Get the Vehicle SeatEntry of a seat by position
-VehicleSeatEntry const* VehicleInfo::GetSeatEntry(uint8 seat) const
+void VehicleKit::Dismount(Unit* passenger, VehicleSeatEntry const* seatInfo)
 {
-    VehicleSeatMap::const_iterator itr = m_vehicleSeats.find(seat);
-    return itr != m_vehicleSeats.end() ? itr->second : NULL;
+    if (!passenger)
+        return;
+
+    float ox, oy, oz/*, oo*/; /* oo can be used, but not at the moment*/
+
+    Unit* base = m_pBase->GetVehicle() ? m_pBase->GetVehicle()->GetBase() : m_pBase;
+
+    base->GetPosition(ox, oy, oz);
+    /*oo = base->GetOrientation();*/
+
+    passenger->m_movementInfo = base->m_movementInfo;
+
+    if (b_dstSet)
+    {
+        // parabolic traectory (catapults, explode, other effects). mostly set destination in DummyEffect.
+        // destination Z not checked in this case! only limited on 8.0 delta. requred full correct set in spelleffects. 
+        float speed = ((m_dst_speed > 0.0f) ? m_dst_speed : (seatInfo ? seatInfo->m_exitSpeed : 28.0f));
+        float verticalSpeed = speed * sin(m_dst_elevation);
+        float horisontalSpeed = speed * cos(m_dst_elevation);
+        float moveTimeHalf =  verticalSpeed / ((seatInfo && seatInfo->m_exitGravity > 0.0f) ? seatInfo->m_exitGravity : Movement::gravity);
+        float max_height = - Movement::computeFallElevation(moveTimeHalf,false,-verticalSpeed);
+
+        passenger->GetMotionMaster()->MoveSkyDiving(m_dst_x,m_dst_y,m_dst_z,passenger->GetOrientation(), horisontalSpeed, max_height, true);
+
+    }
+    else if (seatInfo)
+    {
+        // half-parabolic traectory (unmount)
+        float horisontalSpeed = seatInfo->m_exitSpeed;
+
+        // may be under water
+        base->GetClosePoint(m_dst_x, m_dst_y, m_dst_z, base->GetObjectBoundingRadius(), frand(2.0f, 3.0f), frand(M_PI_F/2.0f,3.0f*M_PI_F/2.0f));
+        if (m_dst_z < oz)
+            m_dst_z = oz;
+
+        passenger->GetMotionMaster()->MoveSkyDiving(m_dst_x, m_dst_y, m_dst_z + 0.1f, passenger->GetOrientation(), horisontalSpeed, 0.0f);
+    }
+    else
+    {
+        // jump from vehicle without seatInfo (? error case)
+        base->GetClosePoint(m_dst_x, m_dst_y, m_dst_z, base->GetObjectBoundingRadius(), 2.0f, M_PI_F);
+        passenger->UpdateAllowedPositionZ(m_dst_x, m_dst_y, m_dst_z);
+        if (m_dst_z < oz)
+            m_dst_z = oz;
+
+        passenger->GetMotionMaster()->MoveSkyDiving(m_dst_x, m_dst_y, m_dst_z + 0.1f, passenger->GetOrientation(), 28.0f, 0.0f);
+    }
+
+    SetDestination();
 }
 
-/*
- * This function will get a usable seat for a passenger
- *
- * @param passenger         MUST be provided. Unit for which to try to get a free seat
- * @param seat              will contain an available seat if returned true
- * @return                  return TRUE if and only if an available seat was found. In this case @seat will contain the id
- */
-bool VehicleInfo::GetUsableSeatFor(Unit* passenger, uint8& seat) const
+void VehicleKit::SetDestination(float x, float y, float z, float o, float speed, float elevation)
 {
-    MANGOS_ASSERT(passenger);
+    m_dst_x = x;
+    m_dst_y = y;
+    m_dst_z  = z;
+    m_dst_o  = o;
+    m_dst_speed  = speed;
+    m_dst_elevation  = elevation;
 
-    uint8 possibleSeats = (passenger->GetTypeId() == TYPEID_PLAYER) ? (GetEmptySeatsMask() & m_playerSeats) : (GetEmptySeatsMask() & m_creatureSeats);
+    if (fabs(m_dst_x) > 0.001 ||
+        fabs(m_dst_y) > 0.001 ||
+        fabs(m_dst_z) > 0.001 ||
+        fabs(m_dst_o) > 0.001 ||
+        fabs(m_dst_speed) > 0.001 ||
+        fabs(m_dst_elevation) > 0.001)
+        b_dstSet = true;
+};
 
-    // No usable seats available
-    if (!possibleSeats)
-        return false;
+bool PassengerEjectEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
+{
+    if (!m_vehicle.GetVehicleInfo())
+        return true;
 
-    // Start with 0
-    seat = 0;
+    VehicleKit* pVehicle = m_vehicle.GetVehicleKit();
 
-    for (uint8 i = 1; seat < MAX_VEHICLE_SEAT; i <<= 1, ++seat)
-        if (possibleSeats & i)
-            return true;
+    if (!pVehicle)
+        return true;
+
+    Unit* passenger = pVehicle->GetPassenger(m_seatId);
+
+    if (passenger && passenger->IsInWorld() && passenger->hasUnitState(UNIT_STAT_ON_VEHICLE))
+    {
+        if (!m_vehicle.RemoveSpellsCausingAuraByCaster(SPELL_AURA_CONTROL_VEHICLE, passenger->GetObjectGuid()))
+            passenger->ExitVehicle();
+    }
+    return true;
+}
+
+bool VehicleSeat::IsProtectPassenger() const
+{
+    if (seatInfo &&
+        (seatInfo->m_flags & SEAT_FLAG_UNATTACKABLE ||
+        seatInfo->m_flags &  SEAT_FLAG_HIDE_PASSENGER ||
+        seatInfo->m_flags & SEAT_FLAG_CAN_CONTROL) &&
+        !(seatInfo->m_flags &  SEAT_FLAG_FREE_ACTION))
+        return true;
 
     return false;
 }
 
-/// Returns if a @passenger could board onto @seat - @passenger MUST be provided
-bool VehicleInfo::IsSeatAvailableFor(Unit* passenger, uint8 seat) const
+Aura* VehicleKit::GetControlAura(Unit* passenger)
 {
-    MANGOS_ASSERT(passenger);
+    if (!passenger)
+        return NULL;
 
-    return seat < MAX_VEHICLE_SEAT &&
-           (GetEmptySeatsMask() & (passenger->GetTypeId() == TYPEID_PLAYER ? m_playerSeats : m_creatureSeats) & (1 << seat));
-}
+    ObjectGuid casterGuid = passenger->GetObjectGuid();
+    Unit::AuraList const& auras = GetBase()->GetAurasByType(SPELL_AURA_CONTROL_VEHICLE);
 
-/// Wrapper to collect all taken seats
-uint8 VehicleInfo::GetTakenSeatsMask() const
-{
-    uint8 takenSeatsMask = 0;
-
-    for (PassengerMap::const_iterator itr = m_passengers.begin(); itr != m_passengers.end(); ++itr)
-        takenSeatsMask |= 1 << itr->second->GetTransportSeat();
-
-    return takenSeatsMask;
-}
-
-bool VehicleInfo:: IsUsableSeatForPlayer(uint32 seatFlags) const
-{
-    return seatFlags & SEAT_FLAG_USABLE;
-}
-
-/// Add control and such modifiers to a passenger if required
-void VehicleInfo::ApplySeatMods(Unit* passenger, uint32 seatFlags)
-{
-    Unit* pVehicle = (Unit*)m_owner;                        // Vehicles are alawys Unit
-
-    if (passenger->GetTypeId() == TYPEID_PLAYER)
+    for(Unit::AuraList::const_iterator i = auras.begin();i != auras.end(); ++i)
     {
-        Player* pPlayer = (Player*)passenger;
-
-        if (seatFlags & SEAT_FLAG_CAN_CONTROL)
-        {
-            pPlayer->GetCamera().SetView(pVehicle);
-
-            pPlayer->SetCharm(pVehicle);
-            pVehicle->SetCharmerGuid(pPlayer->GetObjectGuid());
-
-            pVehicle->addUnitState(UNIT_STAT_CONTROLLED);
-            pVehicle->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
-
-            pPlayer->SetClientControl(pVehicle, 1);
-            pPlayer->SetMover(pVehicle);
-
-            // Unconfirmed - default speed handling
-            if (pVehicle->GetTypeId() == TYPEID_UNIT)
-            {
-                if (!pPlayer->IsWalking() && pVehicle->IsWalking())
-                {
-                    ((Creature*)pVehicle)->SetWalk(false, true);
-                }
-                else if (pPlayer->IsWalking() && !pVehicle->IsWalking())
-                {
-                    ((Creature*)pVehicle)->SetWalk(true, true);
-                }
-            }
-        }
-
-        if (seatFlags & (SEAT_FLAG_USABLE | SEAT_FLAG_CAN_CAST))
-        {
-            CharmInfo* charmInfo = pVehicle->InitCharmInfo(pVehicle);
-            charmInfo->InitVehicleCreateSpells();
-
-            pPlayer->PossessSpellInitialize();
-        }
+        if ((*i) && !(*i)->IsDeleted() && (*i)->GetCasterGuid() == casterGuid)
+            return *i;
     }
-    else if (passenger->GetTypeId() == TYPEID_UNIT)
-    {
-        if (seatFlags & SEAT_FLAG_CAN_CONTROL)
-        {
-            passenger->SetCharm(pVehicle);
-            pVehicle->SetCharmerGuid(passenger->GetObjectGuid());
-        }
-
-        ((Creature*)passenger)->AI()->SetCombatMovement(false);
-        // Not entirely sure how this must be handled in relation to CONTROL
-        // But in any way this at least would require some changes in the movement system most likely
-        passenger->GetMotionMaster()->Clear(false, true);
-        passenger->GetMotionMaster()->MoveIdle();
-    }
+    return NULL;
 }
-
-/// Remove control and such modifiers to a passenger if they were added
-void VehicleInfo::RemoveSeatMods(Unit* passenger, uint32 seatFlags)
-{
-    Unit* pVehicle = (Unit*)m_owner;
-
-    if (passenger->GetTypeId() == TYPEID_PLAYER)
-    {
-        Player* pPlayer = (Player*)passenger;
-
-        if (seatFlags & SEAT_FLAG_CAN_CONTROL)
-        {
-            pPlayer->SetCharm(NULL);
-            pVehicle->SetCharmerGuid(ObjectGuid());
-
-            pPlayer->SetClientControl(pVehicle, 0);
-            pPlayer->SetMover(NULL);
-
-            pVehicle->clearUnitState(UNIT_STAT_CONTROLLED);
-            pVehicle->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
-
-            // must be called after movement control unapplying
-            pPlayer->GetCamera().ResetView();
-        }
-
-        if (seatFlags & (SEAT_FLAG_USABLE | SEAT_FLAG_CAN_CAST))
-            pPlayer->RemovePetActionBar();
-    }
-    else if (passenger->GetTypeId() == TYPEID_UNIT)
-    {
-        if (seatFlags & SEAT_FLAG_CAN_CONTROL)
-        {
-            passenger->SetCharm(NULL);
-            pVehicle->SetCharmerGuid(ObjectGuid());
-        }
-        // Reinitialize movement
-        ((Creature*)passenger)->AI()->SetCombatMovement(true, true);
-        if (!passenger->getVictim())
-            passenger->GetMotionMaster()->Initialize();
-    }
-}
-
-/*! @} */

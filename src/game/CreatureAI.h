@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include "Dynamic/ObjectRegistry.h"
 #include "Dynamic/FactoryHolder.h"
 #include "ObjectGuid.h"
+#include "Unit.h"
 
 class WorldObject;
 class GameObject;
@@ -51,55 +52,18 @@ enum CanCastResult
 
 enum CastFlags
 {
-    CAST_INTERRUPT_PREVIOUS     = 0x01,                     // Interrupt any spell casting
-    CAST_TRIGGERED              = 0x02,                     // Triggered (this makes spell cost zero mana and have no cast time)
-    CAST_FORCE_CAST             = 0x04,                     // Forces cast even if creature is out of mana or out of range
-    CAST_NO_MELEE_IF_OOM        = 0x08,                     // Prevents creature from entering melee if out of mana or out of range
-    CAST_FORCE_TARGET_SELF      = 0x10,                     // Forces the target to cast this spell on itself
-    CAST_AURA_NOT_PRESENT       = 0x20,                     // Only casts the spell if the target does not have an aura from the spell
-};
-
-enum AIEventType
-{
-    // Usable with Event AI
-    AI_EVENT_JUST_DIED          = 0,                        // Sender = Killed Npc, Invoker = Killer
-    AI_EVENT_CRITICAL_HEALTH    = 1,                        // Sender = Hurt Npc, Invoker = DamageDealer - Expected to be sent by 10% health
-    AI_EVENT_LOST_HEALTH        = 2,                        // Sender = Hurt Npc, Invoker = DamageDealer - Expected to be sent by 50% health
-    AI_EVENT_LOST_SOME_HEALTH   = 3,                        // Sender = Hurt Npc, Invoker = DamageDealer - Expected to be sent by 90% health
-    AI_EVENT_GOT_FULL_HEALTH    = 4,                        // Sender = Healed Npc, Invoker = Healer
-    AI_EVENT_CUSTOM_EVENTAI_A   = 5,                        // Sender = Npc that throws custom event, Invoker = TARGET_T_ACTION_INVOKER (if exists)
-    AI_EVENT_CUSTOM_EVENTAI_B   = 6,                        // Sender = Npc that throws custom event, Invoker = TARGET_T_ACTION_INVOKER (if exists)
-    AI_EVENT_GOT_CCED           = 7,                        // Sender = CCed Npc, Invoker = Caster that CCed
-    MAXIMAL_AI_EVENT_EVENTAI    = 8,
-
-    // Internal Use
-    AI_EVENT_CALL_ASSISTANCE    = 10,                       // Sender = Attacked Npc, Invoker = Enemy
-
-    // Predefined for SD2
-    AI_EVENT_START_ESCORT       = 100,                      // Invoker = Escorting Player
-    AI_EVENT_START_ESCORT_B     = 101,                      // Invoker = Escorting Player
-    AI_EVENT_START_EVENT        = 102,                      // Invoker = EventStarter
-    AI_EVENT_START_EVENT_A      = 103,                      // Invoker = EventStarter
-    AI_EVENT_START_EVENT_B      = 104,                      // Invoker = EventStarter
-
-    // Some IDs for special cases in SD2
-    AI_EVENT_CUSTOM_A           = 1000,
-    AI_EVENT_CUSTOM_B           = 1001,
-    AI_EVENT_CUSTOM_C           = 1002,
-    AI_EVENT_CUSTOM_D           = 1003,
-    AI_EVENT_CUSTOM_E           = 1004,
-    AI_EVENT_CUSTOM_F           = 1005,
+    CAST_INTERRUPT_PREVIOUS     = 0x01,                     //Interrupt any spell casting
+    CAST_TRIGGERED              = 0x02,                     //Triggered (this makes spell cost zero mana and have no cast time)
+    CAST_FORCE_CAST             = 0x04,                     //Forces cast even if creature is out of mana or out of range
+    CAST_NO_MELEE_IF_OOM        = 0x08,                     //Prevents creature from entering melee if out of mana or out of range
+    CAST_FORCE_TARGET_SELF      = 0x10,                     //Forces the target to cast this spell on itself
+    CAST_AURA_NOT_PRESENT       = 0x20,                     //Only casts the spell if the target does not have an aura from the spell
 };
 
 class MANGOS_DLL_SPEC CreatureAI
 {
     public:
-        explicit CreatureAI(Creature* creature) :
-            m_creature(creature),
-            m_isCombatMovement(true),
-            m_attackDistance(0.0f),
-            m_attackAngle(0.0f)
-        {}
+        explicit CreatureAI(Creature* creature) : m_creature(creature) {}
 
         virtual ~CreatureAI();
 
@@ -110,23 +74,23 @@ class MANGOS_DLL_SPEC CreatureAI
          * Use this for on-the-fly debugging
          * @param reader is a ChatHandler to send messages to.
          */
-        virtual void GetAIInformation(ChatHandler& /*reader*/) {}
+        virtual void GetAIInformation(ChatHandler& reader) {}
 
         ///== Reactions At =================================
 
         /**
-         * Called if IsVisible(Unit* pWho) is true at each (relative) override pWho move, reaction at visibility zone enter
+         * Called if IsVisible(Unit* pWho) is true at each (relative) pWho move, reaction at visibility zone enter
          * Note: The Unit* pWho can be out of Line of Sight, usually this is only visibiliy (by state) and range dependendend
          * Note: This function is not called for creatures who are in evade mode
          * @param pWho Unit* who moved in the visibility range and is visisble
          */
-        virtual void MoveInLineOfSight(Unit* /*pWho*/) {}
+        virtual void MoveInLineOfSight(Unit* pWho) {}
 
         /**
          * Called for reaction at enter to combat if not in combat yet
          * @param pEnemy Unit* of whom the Creature enters combat with, can be NULL
          */
-        virtual void EnterCombat(Unit* /*pEnemy*/) {}
+        virtual void EnterCombat(Unit* pEnemy) {}
 
         /**
          * Called for reaction at stopping attack at no attackers or targets
@@ -139,19 +103,15 @@ class MANGOS_DLL_SPEC CreatureAI
          */
         virtual void JustReachedHome() {}
 
-        /**
-         * Called at any Heal received from any Unit
-         * @param pHealer Unit* which deals the heal
-         * @param uiHealedAmount Amount of healing received
-         */
-        virtual void HealedBy(Unit * /*pHealer*/, uint32& /*uiHealedAmount*/) {}
+        // Called at any heal cast/item used (call non implemented)
+        // virtual void HealBy(Unit * /*healer*/, uint32 /*amount_healed*/) {}
 
         /**
          * Called at any Damage to any victim (before damage apply)
          * @param pDoneTo Unit* to whom Damage of amount uiDamage will be dealt
          * @param uiDamage Amount of Damage that will be dealt, can be changed here
          */
-        virtual void DamageDeal(Unit* /*pDoneTo*/, uint32& /*uiDamage*/) {}
+        virtual void DamageDeal(Unit* pDoneTo, uint32& uiDamage) {}
 
         /**
          * Called at any Damage from any attacker (before damage apply)
@@ -160,69 +120,69 @@ class MANGOS_DLL_SPEC CreatureAI
          * @param pDealer Unit* who will deal Damage to the creature
          * @param uiDamage Amount of Damage that will be dealt, can be changed here
          */
-        virtual void DamageTaken(Unit* /*pDealer*/, uint32& /*uiDamage*/) {}
+        virtual void DamageTaken(Unit* pDealer, uint32& uiDamage) {}
 
         /**
          * Called when the creature is killed
          * @param pKiller Unit* who killed the creature
          */
-        virtual void JustDied(Unit* /*pKiller*/) {}
+        virtual void JustDied(Unit* pKiller) {}
 
         /**
          * Called when the corpse of this creature gets removed
          * @param uiRespawnDelay Delay (in seconds). If != 0, then this is the time after which the creature will respawn, if = 0 the default respawn-delay will be used
          */
-        virtual void CorpseRemoved(uint32& /*uiRespawnDelay*/) {}
+        virtual void CorpseRemoved(uint32& uiRespawnDelay) {}
 
         /**
          * Called when a summoned creature is killed
          * @param pSummoned Summoned Creature* that got killed
          */
-        virtual void SummonedCreatureJustDied(Creature* /*pSummoned*/) {}
+        virtual void SummonedCreatureJustDied(Creature* pSummoned) {}
 
         /**
          * Called when the creature kills a unit
          * @param pVictim Victim that got killed
          */
-        virtual void KilledUnit(Unit* /*pVictim*/) {}
+        virtual void KilledUnit(Unit* pVictim) {}
 
         /**
          * Called when owner of m_creature (if m_creature is PROTECTOR_PET) kills a unit
          * @param pVictim Victim that got killed (by owner of creature)
          */
-        virtual void OwnerKilledUnit(Unit* /*pVictim*/) {}
+        virtual void OwnerKilledUnit(Unit* pVictim) {}
 
         /**
          * Called when the creature summon successfully other creature
          * @param pSummoned Creature that got summoned
          */
-        virtual void JustSummoned(Creature* /*pSummoned*/) {}
+        virtual void JustSummoned(Creature* pSummoned) {}
 
         /**
          * Called when the creature summon successfully a gameobject
          * @param pGo GameObject that was summoned
          */
-        virtual void JustSummoned(GameObject* /*pGo*/) {}
+        virtual void JustSummoned(GameObject* pGo) {}
 
         /**
          * Called when a summoned creature gets TemporarySummon::UnSummon ed
          * @param pSummoned Summoned creature that despawned
          */
-        virtual void SummonedCreatureDespawn(Creature* /*pSummoned*/) {}
+        virtual void SummonedCreatureDespawn(Creature* pSummoned) {}
 
         /**
          * Called when hit by a spell
          * @param pCaster Caster who casted the spell
          * @param pSpell The spell that hit the creature
          */
-        virtual void SpellHit(Unit* /*pCaster*/, const SpellEntry* /*pSpell*/) {}
+        virtual void SpellHit(Unit* pCaster, const SpellEntry* pSpell) {}
 
         /**
          * Called when spell hits creature's target
          * @param pTarget Target that we hit with the spell
          * @param pSpell Spell with which we hit pTarget
          */
-        virtual void SpellHitTarget(Unit* /*pTarget*/, const SpellEntry* /*pSpell*/) {}
+        virtual void SpellHitTarget(Unit* pTarget, const SpellEntry* pSpell) {}
 
         /**
          * Called when the creature is target of hostile action: swing, hostile spell landed, fear/etc)
@@ -240,7 +200,7 @@ class MANGOS_DLL_SPEC CreatureAI
          * @param uiMovementType Type of the movement (enum MovementGeneratorType)
          * @param uiData Data related to the finished movement (ie point-id)
          */
-        virtual void MovementInform(uint32 /*uiMovementType*/, uint32 /*uiData*/) {}
+        virtual void MovementInform(uint32 uiMovementType, uint32 uiData) {}
 
         /**
          * Called if a temporary summoned of m_creature reach a move point
@@ -248,14 +208,17 @@ class MANGOS_DLL_SPEC CreatureAI
          * @param uiMotionType Type of the movement (enum MovementGeneratorType)
          * @param uiData Data related to the finished movement (ie point-id)
          */
-        virtual void SummonedMovementInform(Creature* /*pSummoned*/, uint32 /*uiMotionType*/, uint32 /*uiData*/) {}
+        virtual void SummonedMovementInform(Creature* pSummoned, uint32 uiMotionType, uint32 uiData) {}
 
         /**
          * Called at text emote receive from player
          * @param pPlayer Player* who sent the emote
          * @param uiEmote ID of the emote the player used with the creature as target
          */
-        virtual void ReceiveEmote(Player* /*pPlayer*/, uint32 /*uiEmote*/) {}
+        virtual void ReceiveEmote(Player* pPlayer, uint32 uiEmote) {}
+
+        // Called at vehicle enter
+        virtual void PassengerBoarded(Unit * /*who*/, int8 /*seatId*/, bool /*apply*/) {}
 
         ///== Triggered Actions Requested ==================
 
@@ -265,7 +228,7 @@ class MANGOS_DLL_SPEC CreatureAI
          * Note: Usually called by MoveInLineOfSight, in Unit::SelectHostileTarget or when the AI is forced to attack an enemy
          * @param pWho Unit* who is possible target
          */
-        virtual void AttackStart(Unit* /*pWho*/) {}
+        virtual void AttackStart(Unit* pWho) {}
 
         /**
          * Called at World update tick, by default every 100ms
@@ -273,7 +236,7 @@ class MANGOS_DLL_SPEC CreatureAI
          * Note: Use this function to handle Timers, Threat-Management and MeleeAttacking
          * @param uiDiff Passed time since last call
          */
-        virtual void UpdateAI(const uint32 /*uiDiff*/) {}
+        virtual void UpdateAI(const uint32 uiDiff) {}
 
         ///== State checks =================================
 
@@ -282,13 +245,14 @@ class MANGOS_DLL_SPEC CreatureAI
          * Note: This check is by default only the state-depending (visibility, range), NOT LineOfSight
          * @param pWho Unit* who is checked if it is visisble for the creature
          */
-        virtual bool IsVisible(Unit* /*pWho*/) const { return false; }
+        virtual bool IsVisible(Unit* pWho) const { return false; }
 
         // Called when victim entered water and creature can not enter water
         // TODO: rather unused
         virtual bool canReachByRangeAttack(Unit*) { return false; }
 
         ///== Helper functions =============================
+        bool AttackByType(WeaponAttackType attType = BASE_ATTACK);
 
         /// This function is used to do the actual melee damage (if possible)
         bool DoMeleeAttackIfReady();
@@ -305,65 +269,25 @@ class MANGOS_DLL_SPEC CreatureAI
          */
         CanCastResult DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags = 0, ObjectGuid OriginalCasterGuid = ObjectGuid());
 
-        /// Set combat movement (on/off), also sets UNIT_STAT_NO_COMBAT_MOVEMENT
-        void SetCombatMovement(bool enable, bool stopOrStartMovement = false);
-        bool IsCombatMovement() const { return m_isCombatMovement; }
-
-        ///== Event Handling ===============================
-
-        /*
-         * Send an AI Event to nearby Creatures around
-         * @param uiType number to specify the event, default cases listed in enum AIEventType
-         * @param pInvoker Unit that triggered this event (like an attacker)
-         * @param uiDelay  delay time until the Event will be triggered
-         * @param fRadius  range in which for receiver is searched
-         */
-        void SendAIEventAround(AIEventType eventType, Unit* pInvoker, uint32 uiDelay, float fRadius, uint32 miscValue = 0) const;
-
-        /*
-         * Send an AI Event to a Creature
-         * @param eventType to specify the event, default cases listed in enum AIEventType
-         * @param pInvoker Unit that triggered this event (like an attacker)
-         * @param pReceiver Creature to receive this event
-         */
-        void SendAIEvent(AIEventType eventType, Unit* pInvoker, Creature* pReceiver, uint32 miscValue = 0) const;
-
-        /*
-         * Called when an AI Event is received
-         * @param eventType to specify the event, default cases listed in enum AIEventType
-         * @param pSender Creature that sent this event
-         * @param pInvoker Unit that triggered this event (like an attacker)
-         */
-        virtual void ReceiveAIEvent(AIEventType /*eventType*/, Creature* /*pSender*/, Unit* /*pInvoker*/, uint32 /*miscValue*/) {}
-
-    protected:
-        void HandleMovementOnAttackStart(Unit* victim);
-
         ///== Fields =======================================
 
         /// Pointer to the Creature controlled by this AI
         Creature* const m_creature;
-
-        /// Combat movement currently enabled
-        bool m_isCombatMovement;
-        /// How should an enemy be chased
-        float m_attackDistance;
-        float m_attackAngle;
 };
 
 struct SelectableAI : public FactoryHolder<CreatureAI>, public Permissible<Creature>
 {
-    SelectableAI(const char* id) : FactoryHolder<CreatureAI>(id) {}
+    SelectableAI(const char *id) : FactoryHolder<CreatureAI>(id) {}
 };
 
 template<class REAL_AI>
 struct CreatureAIFactory : public SelectableAI
 {
-    CreatureAIFactory(const char* name) : SelectableAI(name) {}
+    CreatureAIFactory(const char *name) : SelectableAI(name) {}
 
-    CreatureAI* Create(void*) const override;
+    CreatureAI* Create(void *) const;
 
-    int Permit(const Creature* c) const { return REAL_AI::Permissible(c); }
+    int Permit(const Creature *c) const { return REAL_AI::Permissible(c); }
 };
 
 enum Permitions

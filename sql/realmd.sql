@@ -21,7 +21,7 @@
 
 DROP TABLE IF EXISTS `realmd_db_version`;
 CREATE TABLE `realmd_db_version` (
-  `required_z2426_01_realmd_relations` bit(1) default NULL
+  `required_10008_01_realmd_realmd_db_version` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Last applied sql update to DB';
 
 --
@@ -41,7 +41,7 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `account`;
 CREATE TABLE `account` (
-  `id` INT( 11 ) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT  'Account identifier',
+  `id` int(11) unsigned NOT NULL auto_increment COMMENT 'Identifier',
   `username`      varchar(32) NOT NULL default '',
   `sha_pass_hash` varchar(40) NOT NULL default '',
   `gmlevel` tinyint(3) unsigned NOT NULL default '0',
@@ -70,10 +70,10 @@ CREATE TABLE `account` (
 LOCK TABLES `account` WRITE;
 /*!40000 ALTER TABLE `account` DISABLE KEYS */;
 INSERT INTO `account` VALUES
-(1,'ADMINISTRATOR','a34b29541b87b7e4823683ce6c7bf6ae68beaaac',3,'','0','0','','2006-04-25 10:18:56','127.0.0.1',0,0,'0000-00-00 00:00:00',0,2,0,0),
-(2,'GAMEMASTER','7841e21831d7c6bc0b57fbe7151eb82bd65ea1f9',2,'','0','0','','2006-04-25 10:18:56','127.0.0.1',0,0,'0000-00-00 00:00:00',0,2,0,0),
-(3,'MODERATOR','a7f5fbff0b4eec2d6b6e78e38e8312e64d700008',1,'','0','0','','2006-04-25 10:19:35','127.0.0.1',0,0,'0000-00-00 00:00:00',0,2,0,0),
-(4,'PLAYER','3ce8a96d17c5ae88a30681024e86279f1a38c041',0,'','0','0','','2006-04-25 10:19:35','127.0.0.1',0,0,'0000-00-00 00:00:00',0,2,0,0);
+(1,'ADMINISTRATOR','a34b29541b87b7e4823683ce6c7bf6ae68beaaac',3,'','0','0','','2006-04-25 10:18:56','127.0.0.1',0,0,'0000-00-00 00:00:00',0,0,0,0),
+(2,'GAMEMASTER','7841e21831d7c6bc0b57fbe7151eb82bd65ea1f9',2,'','0','0','','2006-04-25 10:18:56','127.0.0.1',0,0,'0000-00-00 00:00:00',0,0,0,0),
+(3,'MODERATOR','a7f5fbff0b4eec2d6b6e78e38e8312e64d700008',1,'','0','0','','2006-04-25 10:19:35','127.0.0.1',0,0,'0000-00-00 00:00:00',0,0,0,0),
+(4,'PLAYER','3ce8a96d17c5ae88a30681024e86279f1a38c041',0,'','0','0','','2006-04-25 10:19:35','127.0.0.1',0,0,'0000-00-00 00:00:00',0,0,0,0);
 /*!40000 ALTER TABLE `account` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -83,7 +83,7 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `account_banned`;
 CREATE TABLE `account_banned` (
-  `id` INT( 11 ) UNSIGNED NOT NULL COMMENT  'Account identifier',
+  `id` int(11) NOT NULL default '0' COMMENT 'Account id',
   `bandate` bigint(40) NOT NULL default '0',
   `unbandate` bigint(40) NOT NULL default '0',
   `bannedby` varchar(50) NOT NULL,
@@ -130,8 +130,8 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `realmcharacters`;
 CREATE TABLE `realmcharacters` (
-  `realmid` INT( 11 ) UNSIGNED NOT NULL COMMENT  'Account identifier',
-  `acctid` INT( 11 ) UNSIGNED NOT NULL COMMENT  'Realm identifier',
+  `realmid` int(11) unsigned NOT NULL default '0',
+  `acctid` bigint(20) unsigned NOT NULL,
   `numchars` tinyint(3) unsigned NOT NULL default '0',
   PRIMARY KEY  (`realmid`,`acctid`),
   KEY (acctid)
@@ -152,7 +152,7 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `realmlist`;
 CREATE TABLE `realmlist` (
-  `id` INT( 11 ) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT  'Realm identifier',
+  `id` int(11) unsigned NOT NULL auto_increment,
   `name` varchar(32) NOT NULL default '',
   `address` varchar(32) NOT NULL default '127.0.0.1',
   `port` int(11) NOT NULL default '8085',
@@ -173,7 +173,7 @@ CREATE TABLE `realmlist` (
 LOCK TABLES `realmlist` WRITE;
 /*!40000 ALTER TABLE `realmlist` DISABLE KEYS */;
 INSERT INTO `realmlist` VALUES
-(1,'MaNGOS','127.0.0.1',8085,0,2,0,0,0,'');
+(1,'MaNGOS','127.0.0.1',8085,1,0,1,0,0,'');
 /*!40000 ALTER TABLE `realmlist` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -183,7 +183,7 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `uptime`;
 CREATE TABLE `uptime` (
-  `realmid` INT( 11 ) UNSIGNED NOT NULL COMMENT  'Realm identifier',
+  `realmid` int(11) unsigned NOT NULL,
   `starttime` bigint(20) unsigned NOT NULL default '0',
   `startstring` varchar(64) NOT NULL default '',
   `uptime` bigint(20) unsigned NOT NULL default '0',

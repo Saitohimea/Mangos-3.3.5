@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -74,17 +74,17 @@
 class QueryResultPostgre : public QueryResult
 {
     public:
-        QueryResultPostgre(PGresult* result, uint64 rowCount, uint32 fieldCount);
+        QueryResultPostgre(PGresult *result, uint64 rowCount, uint32 fieldCount);
 
         ~QueryResultPostgre();
 
-        bool NextRow() override;
+        bool NextRow();
 
     private:
         enum Field::DataTypes ConvertNativeType(Oid pOid) const;
-        void EndQuery() override;
+        void EndQuery();
 
-        PGresult* mResult;
+        PGresult *mResult;
         uint32 mTableIndex;
 };
 #endif

@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,15 +52,15 @@ bool Totem::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* 
     cPos.SelectFinalPoint(this);
 
     // totem must be at same Z in case swimming caster and etc.
-    if (fabs(cPos.m_pos.z - owner->GetPositionZ()) > 5.0f)
+    if (fabs(cPos.m_pos.z - owner->GetPositionZ() ) > 5.0f)
         cPos.m_pos.z = owner->GetPositionZ();
 
     if (!cPos.Relocate(this))
         return false;
 
-    // Notify the map's instance data.
-    // Only works if you create the object in it, not if it is moves to that map.
-    // Normally non-players do not teleport to other maps.
+    //Notify the map's instance data.
+    //Only works if you create the object in it, not if it is moves to that map.
+    //Normally non-players do not teleport to other maps.
     if (InstanceData* iData = GetMap()->GetInstanceData())
         iData->OnCreatureCreate(this);
 
@@ -69,9 +69,9 @@ bool Totem::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* 
     return true;
 }
 
-void Totem::Update(uint32 update_diff, uint32 time)
+void Totem::Update(uint32 update_diff, uint32 time )
 {
-    Unit* owner = GetOwner();
+    Unit *owner = GetOwner();
     if (!owner || !owner->isAlive() || !isAlive())
     {
         UnSummon();                                         // remove self
@@ -86,7 +86,7 @@ void Totem::Update(uint32 update_diff, uint32 time)
     else
         m_duration -= update_diff;
 
-    Creature::Update(update_diff, time);
+    Creature::Update( update_diff, time );
 }
 
 void Totem::Summon(Unit* owner)
@@ -97,33 +97,51 @@ void Totem::Summon(Unit* owner)
     if (owner->GetTypeId() == TYPEID_UNIT && ((Creature*)owner)->AI())
         ((Creature*)owner)->AI()->JustSummoned((Creature*)this);
 
-    // there are some totems, which exist just for their visual appeareance
-    if (!GetSpell())
-        return;
-
-    switch (m_type)
+    switch(m_type)
     {
         case TOTEM_PASSIVE:
-            CastSpell(this, GetSpell(), true);
+        {
+            for (uint32 i = 0; i <= GetSpellMaxIndex(); ++i)
+            {
+                if (uint32 spellId = GetSpell(i))
+                    CastSpell(this, spellId, true);
+            }
             break;
+        }
         case TOTEM_STATUE:
-            CastSpell(GetOwner(), GetSpell(), true);
+        {
+            if (GetSpell(0))
+                CastSpell(GetOwner(), GetSpell(0), true);
             break;
-        default: break;
+        }
+        default:
+            break;
     }
 }
 
 void Totem::UnSummon()
 {
     CombatStop();
-    RemoveAurasDueToSpell(GetSpell());
+
+    uint32 maxIdx = GetSpellMaxIndex();
+
+    for (int32 i = maxIdx; i >= 0; --i)
+    {
+        if (uint32 spellId = GetSpell(i))
+            RemoveAurasDueToSpell(spellId);
+    }
 
     if (Unit* owner = GetOwner())
     {
         owner->_RemoveTotem(this);
-        owner->RemoveAurasDueToSpell(GetSpell());
 
-        // remove aura all party members too
+        for (int32 i = maxIdx; i >= 0; --i)
+        {
+            if (uint32 spellId = GetSpell(i))
+                owner->RemoveAurasDueToSpell(spellId);
+        }
+
+        //remove aura all party members too
         if (owner->GetTypeId() == TYPEID_PLAYER)
         {
             ((Player*)owner)->SendAutoRepeatCancel(this);
@@ -135,7 +153,13 @@ void Totem::UnSummon()
                 {
                     Player* Target = itr->getSource();
                     if (Target && pGroup->SameSubGroup((Player*)owner, Target))
-                        Target->RemoveAurasDueToSpell(GetSpell());
+                    {
+                        for (int32 i = maxIdx; i >= 0; --i)
+                        {
+                            if (uint32 spellId = GetSpell(i))
+                                Target->RemoveAurasDueToSpell(spellId);
+                        }
+                    }
                 }
             }
         }
@@ -159,7 +183,7 @@ void Totem::SetOwner(Unit* owner)
     SetLevel(owner->getLevel());
 }
 
-Unit* Totem::GetOwner()
+Unit *Totem::GetOwner()
 {
     if (ObjectGuid ownerGuid = GetOwnerGuid())
         return ObjectAccessor::GetUnit(*this, ownerGuid);
@@ -167,32 +191,30 @@ Unit* Totem::GetOwner()
     return NULL;
 }
 
-void Totem::SetTypeBySummonSpell(SpellEntry const* spellProto)
+void Totem::SetTypeBySummonSpell(SpellEntry const * spellProto)
 {
     // Get spell casted by totem
-    SpellEntry const* totemSpell = sSpellStore.LookupEntry(GetSpell());
+    SpellEntry const * totemSpell = sSpellStore.LookupEntry(GetSpell());
     if (totemSpell)
     {
         // If spell have cast time -> so its active totem
         if (GetSpellCastTime(totemSpell))
             m_type = TOTEM_ACTIVE;
+
+        if(totemSpell->Id == 40132 || totemSpell->Id == 40133)
+            m_type = TOTEM_PASSIVE;                             // Shaman summoning totems
     }
-    if (spellProto->SpellIconID == 2056)
-        m_type = TOTEM_STATUE;                              // Jewelery statue
+    if(spellProto->SpellIconID == 2056)
+        m_type = TOTEM_STATUE;                              //Jewelery statue
+
 }
 
-bool Totem::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index, bool castOnSelf) const
+bool Totem::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index) const
 {
-    // Totem may affected by some specific spells
-    // Mana Spring, Healing stream, Mana tide
-    // Flags : 0x00000002000 | 0x00000004000 | 0x00004000000 -> 0x00004006000
-    if (spellInfo->SpellFamilyName == SPELLFAMILY_SHAMAN && spellInfo->IsFitToFamilyMask(UI64LIT(0x00004006000)))
-        return false;
-
-    switch (spellInfo->Effect[index])
+    switch(spellInfo->Effect[index])
     {
         case SPELL_EFFECT_ATTACK_ME:
-            // immune to any type of regeneration effects hp/mana etc.
+        // immune to any type of regeneration effects hp/mana etc.
         case SPELL_EFFECT_HEAL:
         case SPELL_EFFECT_HEAL_MAX_HEALTH:
         case SPELL_EFFECT_HEAL_MECHANICAL:
@@ -217,5 +239,5 @@ bool Totem::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex 
             return true;
     }
 
-    return Creature::IsImmuneToSpellEffect(spellInfo, index, castOnSelf);
+    return Creature::IsImmuneToSpellEffect(spellInfo, index);
 }

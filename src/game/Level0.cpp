@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,11 +29,12 @@
 #include "SystemConfig.h"
 #include "revision.h"
 #include "revision_nr.h"
+#include "revision_R2.h"
 #include "Util.h"
 
 bool ChatHandler::HandleHelpCommand(char* args)
 {
-    if (!*args)
+    if(!*args)
     {
         ShowHelpForCommand(getCommandTable(), "help");
         ShowHelpForCommand(getCommandTable(), "");
@@ -66,16 +67,16 @@ bool ChatHandler::HandleAccountCommand(char* args)
 
 bool ChatHandler::HandleStartCommand(char* /*args*/)
 {
-    Player* chr = m_session->GetPlayer();
+    Player *chr = m_session->GetPlayer();
 
-    if (chr->IsTaxiFlying())
+    if(chr->IsTaxiFlying())
     {
         SendSysMessage(LANG_YOU_IN_FLIGHT);
         SetSentErrorMessage(true);
         return false;
     }
 
-    if (chr->isInCombat())
+    if(chr->isInCombat())
     {
         SendSysMessage(LANG_YOU_IN_COMBAT);
         SetSentErrorMessage(true);
@@ -83,7 +84,7 @@ bool ChatHandler::HandleStartCommand(char* /*args*/)
     }
 
     // cast spell Stuck
-    chr->CastSpell(chr, 7355, false);
+    chr->CastSpell(chr,7355,false);
     return true;
 }
 
@@ -96,11 +97,19 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     std::string str = secsToTimeString(sWorld.GetUptime());
 
     char const* full;
-    if (m_session)
-        full = _FULLVERSION(REVISION_DATE, REVISION_TIME, REVISION_NR, "|cffffffff|Hurl:" REVISION_ID "|h" REVISION_ID "|h|r");
+    char const* fullR2;
+    if(m_session)
+    {
+        full = _FULLVERSION(REVISION_NR);
+        fullR2 = _R2FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_R2,"|cffffffff|Hurl:" REVISION_ID "|h" REVISION_ID "|h|r");
+    }
     else
-        full = _FULLVERSION(REVISION_DATE, REVISION_TIME, REVISION_NR, REVISION_ID);
+    {
+        full = _FULLVERSION(REVISION_NR);
+        fullR2 = _R2FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_R2,REVISION_ID);
+    }
     SendSysMessage(full);
+    SendSysMessage(fullR2);
 
     if (sScriptMgr.IsScriptLibraryLoaded())
     {
@@ -113,8 +122,8 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     else
         SendSysMessage(LANG_USING_SCRIPT_LIB_NONE);
 
-    PSendSysMessage(LANG_USING_WORLD_DB, sWorld.GetDBVersion());
-    PSendSysMessage(LANG_USING_EVENT_AI, sWorld.GetCreatureEventAIVersion());
+    PSendSysMessage(LANG_USING_WORLD_DB,sWorld.GetDBVersion());
+    PSendSysMessage(LANG_USING_EVENT_AI,sWorld.GetCreatureEventAIVersion());
     PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
     PSendSysMessage(LANG_UPTIME, str.c_str());
 
@@ -123,15 +132,15 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
 
 bool ChatHandler::HandleDismountCommand(char* /*args*/)
 {
-    // If player is not mounted, so go out :)
-    if (!m_session->GetPlayer()->IsMounted())
+    //If player is not mounted, so go out :)
+    if (!m_session->GetPlayer( )->IsMounted())
     {
         SendSysMessage(LANG_CHAR_NON_MOUNTED);
         SetSentErrorMessage(true);
         return false;
     }
 
-    if (m_session->GetPlayer()->IsTaxiFlying())
+    if(m_session->GetPlayer( )->IsTaxiFlying())
     {
         SendSysMessage(LANG_YOU_IN_FLIGHT);
         SetSentErrorMessage(true);
@@ -145,10 +154,10 @@ bool ChatHandler::HandleDismountCommand(char* /*args*/)
 
 bool ChatHandler::HandleSaveCommand(char* /*args*/)
 {
-    Player* player = m_session->GetPlayer();
+    Player *player=m_session->GetPlayer();
 
     // save GM account without delay and output message (testing, etc)
-    if (GetAccessLevel() > SEC_PLAYER)
+    if(GetAccessLevel() > SEC_PLAYER)
     {
         player->SaveToDB();
         SendSysMessage(LANG_PLAYER_SAVED);
@@ -157,7 +166,7 @@ bool ChatHandler::HandleSaveCommand(char* /*args*/)
 
     // save or plan save after 20 sec (logout delay) if current next save time more this value and _not_ output any messages to prevent cheat planning
     uint32 save_interval = sWorld.getConfig(CONFIG_UINT32_INTERVAL_SAVE);
-    if (save_interval == 0 || (save_interval > 20 * IN_MILLISECONDS && player->GetSaveTimer() <= save_interval - 20 * IN_MILLISECONDS))
+    if (save_interval==0 || (save_interval > 20*IN_MILLISECONDS && player->GetSaveTimer() <= save_interval - 20*IN_MILLISECONDS))
         player->SaveToDB();
 
     return true;
@@ -169,12 +178,12 @@ bool ChatHandler::HandleGMListIngameCommand(char* /*args*/)
 
     {
         HashMapHolder<Player>::ReadGuard g(HashMapHolder<Player>::GetLock());
-        HashMapHolder<Player>::MapType& m = sObjectAccessor.GetPlayers();
+        HashMapHolder<Player>::MapType &m = sObjectAccessor.GetPlayers();
         for (HashMapHolder<Player>::MapType::const_iterator itr = m.begin(); itr != m.end(); ++itr)
         {
             AccountTypes itr_sec = itr->second->GetSession()->GetSecurity();
             if ((itr->second->isGameMaster() || (itr_sec > SEC_PLAYER && itr_sec <= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_GM_LEVEL_IN_GM_LIST))) &&
-                    (!m_session || itr->second->IsVisibleGloballyFor(m_session->GetPlayer())))
+                (!m_session || itr->second->IsVisibleGloballyFor(m_session->GetPlayer())))
                 names.push_back(std::make_pair<std::string, bool>(GetNameLink(itr->second), itr->second->isAcceptWhispers()));
         }
     }
@@ -185,7 +194,7 @@ bool ChatHandler::HandleGMListIngameCommand(char* /*args*/)
 
         char const* accepts = GetMangosString(LANG_GM_ACCEPTS_WHISPER);
         char const* not_accept = GetMangosString(LANG_GM_NO_WHISPER);
-        for (std::list<std::pair< std::string, bool> >::const_iterator iter = names.begin(); iter != names.end(); ++iter)
+        for(std::list<std::pair< std::string, bool> >::const_iterator iter = names.begin(); iter != names.end(); ++iter)
             PSendSysMessage("%s - %s", iter->first.c_str(), iter->second ? accepts : not_accept);
     }
     else
@@ -199,15 +208,15 @@ bool ChatHandler::HandleAccountPasswordCommand(char* args)
     // allow use from RA, but not from console (not have associated account id)
     if (!GetAccountId())
     {
-        SendSysMessage(LANG_RA_ONLY_COMMAND);
-        SetSentErrorMessage(true);
+        SendSysMessage (LANG_RA_ONLY_COMMAND);
+        SetSentErrorMessage (true);
         return false;
     }
 
     // allow or quoted string with possible spaces or literal without spaces
-    char* old_pass = ExtractQuotedOrLiteralArg(&args);
-    char* new_pass = ExtractQuotedOrLiteralArg(&args);
-    char* new_pass_c = ExtractQuotedOrLiteralArg(&args);
+    char *old_pass = ExtractQuotedOrLiteralArg(&args);
+    char *new_pass = ExtractQuotedOrLiteralArg(&args);
+    char *new_pass_c = ExtractQuotedOrLiteralArg(&args);
 
     if (!old_pass || !new_pass || !new_pass_c)
         return false;
@@ -218,21 +227,21 @@ bool ChatHandler::HandleAccountPasswordCommand(char* args)
 
     if (password_new != password_new_c)
     {
-        SendSysMessage(LANG_NEW_PASSWORDS_NOT_MATCH);
-        SetSentErrorMessage(true);
+        SendSysMessage (LANG_NEW_PASSWORDS_NOT_MATCH);
+        SetSentErrorMessage (true);
         return false;
     }
 
-    if (!sAccountMgr.CheckPassword(GetAccountId(), password_old))
+    if (!sAccountMgr.CheckPassword (GetAccountId(), password_old))
     {
-        SendSysMessage(LANG_COMMAND_WRONGOLDPASSWORD);
-        SetSentErrorMessage(true);
+        SendSysMessage (LANG_COMMAND_WRONGOLDPASSWORD);
+        SetSentErrorMessage (true);
         return false;
     }
 
     AccountOpResult result = sAccountMgr.ChangePassword(GetAccountId(), password_new);
 
-    switch (result)
+    switch(result)
     {
         case AOR_OK:
             SendSysMessage(LANG_COMMAND_PASSWORD);
@@ -259,8 +268,8 @@ bool ChatHandler::HandleAccountLockCommand(char* args)
     // allow use from RA, but not from console (not have associated account id)
     if (!GetAccountId())
     {
-        SendSysMessage(LANG_RA_ONLY_COMMAND);
-        SetSentErrorMessage(true);
+        SendSysMessage (LANG_RA_ONLY_COMMAND);
+        SetSentErrorMessage (true);
         return false;
     }
 
@@ -272,16 +281,9 @@ bool ChatHandler::HandleAccountLockCommand(char* args)
         return false;
     }
 
-    if (value)
-    {
-        LoginDatabase.PExecute("UPDATE account SET locked = '1' WHERE id = '%u'", GetAccountId());
-        PSendSysMessage(LANG_COMMAND_ACCLOCKLOCKED);
-    }
-    else
-    {
-        LoginDatabase.PExecute("UPDATE account SET locked = '0' WHERE id = '%u'", GetAccountId());
-        PSendSysMessage(LANG_COMMAND_ACCLOCKUNLOCKED);
-    }
+    sAccountMgr.LockAccount(GetAccountId(), value);
+
+    PSendSysMessage(value ? LANG_COMMAND_ACCLOCKLOCKED : LANG_COMMAND_ACCLOCKUNLOCKED);
 
     return true;
 }

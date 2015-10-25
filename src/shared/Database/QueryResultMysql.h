@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,17 +33,17 @@
 class QueryResultMysql : public QueryResult
 {
     public:
-        QueryResultMysql(MYSQL_RES* result, MYSQL_FIELD* fields, uint64 rowCount, uint32 fieldCount);
+        QueryResultMysql(MYSQL_RES *result, MYSQL_FIELD *fields, uint64 rowCount, uint32 fieldCount);
 
         ~QueryResultMysql();
 
-        bool NextRow() override;
+        bool NextRow();
 
     private:
         enum Field::DataTypes ConvertNativeType(enum_field_types mysqlType) const;
         void EndQuery();
 
-        MYSQL_RES* mResult;
+        MYSQL_RES *mResult;
 };
 #endif
 #endif

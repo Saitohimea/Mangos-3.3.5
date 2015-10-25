@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #ifndef DO_POSTGRESQL
@@ -27,8 +24,8 @@
 //#include "Common.h"
 #include "Database.h"
 #include "Policies/Singleton.h"
-#include <ace/Thread_Mutex.h>
-#include <ace/Guard_T.h>
+#include "ace/Thread_Mutex.h"
+#include "ace/Guard_T.h"
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -36,231 +33,87 @@
 #else
 #include <mysql.h>
 #endif
-/**
- * @brief MySQL prepared statement class
- *
- */
+
+//MySQL prepared statement class
 class MANGOS_DLL_SPEC MySqlPreparedStatement : public SqlPreparedStatement
 {
-    public:
-        /**
-         * @brief
-         *
-         * @param fmt
-         * @param conn
-         * @param mysql
-         */
-        MySqlPreparedStatement(const std::string& fmt, SqlConnection& conn, MYSQL* mysql);
-        /**
-         * @brief
-         *
-         */
-        ~MySqlPreparedStatement();
+public:
+    MySqlPreparedStatement(const std::string& fmt, SqlConnection& conn, MYSQL * mysql);
+    ~MySqlPreparedStatement();
 
-        /**
-         * @brief prepare statement
-         *
-         * @return bool
-         */
-        virtual bool prepare() override;
+    //prepare statement
+    virtual bool prepare();
 
-        /**
-         * @brief bind input parameters
-         *
-         * @param holder
-         */
-        virtual void bind(const SqlStmtParameters& holder) override;
+    //bind input parameters
+    virtual void bind(const SqlStmtParameters& holder);
 
-        /**
-         * @brief execute DML statement
-         *
-         * @return bool
-         */
-        virtual bool execute() override;
+    //execute DML statement
+    virtual bool execute();
 
-    protected:
-        /**
-         * @brief bind parameters
-         *
-         * @param nIndex
-         * @param data
-         */
-        void addParam(unsigned int nIndex, const SqlStmtFieldData& data);
+protected:
+    //bind parameters
+    void addParam(int nIndex, const SqlStmtFieldData& data);
 
-        /**
-         * @brief
-         *
-         * @param data
-         * @param bUnsigned
-         * @return enum_field_types
-         */
-        static enum_field_types ToMySQLType(const SqlStmtFieldData& data, my_bool& bUnsigned);
+    static enum_field_types ToMySQLType( const SqlStmtFieldData &data, my_bool &bUnsigned );
 
-    private:
-        /**
-         * @brief
-         *
-         */
-        void RemoveBinds();
+private:
+    void RemoveBinds();
 
-        MYSQL* m_pMySQLConn; /**< TODO */
-        MYSQL_STMT* m_stmt; /**< TODO */
-        MYSQL_BIND* m_pInputArgs; /**< TODO */
-        MYSQL_BIND* m_pResult; /**< TODO */
-        MYSQL_RES* m_pResultMetadata; /**< TODO */
+    MYSQL * m_pMySQLConn;
+    MYSQL_STMT * m_stmt;
+    MYSQL_BIND * m_pInputArgs;
+    MYSQL_BIND * m_pResult;
+    MYSQL_RES *m_pResultMetadata;
 };
 
-/**
- * @brief
- *
- */
 class MANGOS_DLL_SPEC MySQLConnection : public SqlConnection
 {
     public:
-        /**
-         * @brief
-         *
-         * @param db
-         */
         MySQLConnection(Database& db) : SqlConnection(db), mMysql(NULL) {}
-        /**
-         * @brief
-         *
-         */
         ~MySQLConnection();
 
-        /**
-         * @brief Initializes Mysql and connects to a server.
-         *
-         * @param infoString infoString should be formated like hostname;username;password;database
-         * @return bool
-         */
-        bool Initialize(const char* infoString) override;
+        //! Initializes Mysql and connects to a server.
+        /*! infoString should be formated like hostname;username;password;database. */
+        bool Initialize(const char *infoString);
 
-        /**
-         * @brief
-         *
-         * @param sql
-         * @return QueryResult
-         */
-        QueryResult* Query(const char* sql) override;
-        /**
-         * @brief
-         *
-         * @param sql
-         * @return QueryNamedResult
-         */
-        QueryNamedResult* QueryNamed(const char* sql) override;
-        /**
-         * @brief
-         *
-         * @param sql
-         * @return bool
-         */
-        bool Execute(const char* sql) override;
+        QueryResult* Query(const char *sql);
+        QueryNamedResult* QueryNamed(const char *sql);
+        bool Execute(const char *sql);
 
-        /**
-         * @brief
-         *
-         * @param to
-         * @param from
-         * @param length
-         * @return unsigned long
-         */
-        unsigned long escape_string(char* to, const char* from, unsigned long length);
+        unsigned long escape_string(char *to, const char *from, unsigned long length);
 
-        /**
-         * @brief
-         *
-         * @return bool
-         */
-        bool BeginTransaction() override;
-        /**
-         * @brief
-         *
-         * @return bool
-         */
-        bool CommitTransaction() override;
-        /**
-         * @brief
-         *
-         * @return bool
-         */
-        bool RollbackTransaction() override;
+        bool BeginTransaction();
+        bool CommitTransaction();
+        bool RollbackTransaction();
 
     protected:
-        /**
-         * @brief
-         *
-         * @param fmt
-         * @return SqlPreparedStatement
-         */
-        SqlPreparedStatement* CreateStatement(const std::string& fmt) override;
+        SqlPreparedStatement * CreateStatement(const std::string& fmt);
 
     private:
-        /**
-         * @brief
-         *
-         * @param sql
-         * @return bool
-         */
-        bool _TransactionCmd(const char* sql);
-        /**
-         * @brief
-         *
-         * @param sql
-         * @param pResult
-         * @param pFields
-         * @param pRowCount
-         * @param pFieldCount
-         * @return bool
-         */
-        bool _Query(const char* sql, MYSQL_RES** pResult, MYSQL_FIELD** pFields, uint64* pRowCount, uint32* pFieldCount);
+        bool _TransactionCmd(const char *sql);
+        bool _Query(const char *sql, MYSQL_RES **pResult, MYSQL_FIELD **pFields, uint64* pRowCount, uint32* pFieldCount);
 
-        MYSQL* mMysql; /**< TODO */
+        MYSQL *mMysql;
 };
 
-/**
- * @brief
- *
- */
 class MANGOS_DLL_SPEC DatabaseMysql : public Database
 {
-        friend class MaNGOS::OperatorNew<DatabaseMysql>;
+    friend class MaNGOS::OperatorNew<DatabaseMysql>;
 
     public:
-        /**
-         * @brief
-         *
-         */
         DatabaseMysql();
-        /**
-         * @brief
-         *
-         */
         ~DatabaseMysql();
 
-        /**
-         * @brief must be call before first query in thread
-         *
-         */
-        void ThreadStart() override;
-        /**
-         * @brief must be call before finish thread run
-         *
-         */
-        void ThreadEnd() override;
+        // must be call before first query in thread
+        void ThreadStart();
+        // must be call before finish thread run
+        void ThreadEnd();
 
     protected:
-        /**
-         * @brief
-         *
-         * @return SqlConnection
-         */
-        virtual SqlConnection* CreateConnection() override;
+        virtual SqlConnection * CreateConnection();
 
     private:
-        static size_t db_count; /**< TODO */
+        static size_t db_count;
 };
 
 #endif

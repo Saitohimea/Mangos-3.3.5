@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -177,6 +177,7 @@ enum EnchantmentSlot
 #define MAX_VISIBLE_ITEM_OFFSET       2                     // 2 fields per visible item (entry+enchantment)
 
 #define MAX_GEM_SOCKETS               MAX_ITEM_PROTO_SOCKETS// (BONUS_ENCHANTMENT_SLOT-SOCK_ENCHANTMENT_SLOT) and item proto size, equal value expected
+#define MAX_JEWELCRAFTING_GEMS        3
 
 enum EnchantmentOffset
 {
@@ -224,7 +225,7 @@ enum ItemDynFlags
     ITEM_DYNFLAG_UNK5                         = 0x00000020,
     ITEM_DYNFLAG_UNK6                         = 0x00000040, // ? old note: usable
     ITEM_DYNFLAG_UNK7                         = 0x00000080,
-    ITEM_DYNFLAG_UNK8                         = 0x00000100,
+    ITEM_DYNFLAG_BOP_TRADEABLE                = 0x00000100, // Allows trading soulbound items
     ITEM_DYNFLAG_READABLE                     = 0x00000200, // can be open for read, it or item proto pagetText make show "Right click to read"
     ITEM_DYNFLAG_UNK10                        = 0x00000400,
     ITEM_DYNFLAG_UNK11                        = 0x00000800,
@@ -268,17 +269,17 @@ struct ItemRequiredTarget
     bool IsFitToRequirements(Unit* pUnitTarget) const;
 };
 
-bool ItemCanGoIntoBag(ItemPrototype const* proto, ItemPrototype const* pBagProto);
+bool ItemCanGoIntoBag(ItemPrototype const *proto, ItemPrototype const *pBagProto);
 
 class MANGOS_DLL_SPEC Item : public Object
 {
     public:
         static Item* CreateItem(uint32 item, uint32 count, Player const* player = NULL, uint32 randomPropertyId = 0);
-        Item* CloneItem(uint32 count, Player const* player = NULL) const;
+        Item* CloneItem( uint32 count, Player const* player = NULL ) const;
 
         Item();
 
-        virtual bool Create(uint32 guidlow, uint32 itemid, Player const* owner);
+        virtual bool Create( uint32 guidlow, uint32 itemid, Player const* owner);
 
         ItemPrototype const* GetProto() const;
 
@@ -286,7 +287,7 @@ class MANGOS_DLL_SPEC Item : public Object
         void SetOwnerGuid(ObjectGuid guid) { SetGuidValue(ITEM_FIELD_OWNER, guid); }
         Player* GetOwner()const;
 
-        void SetBinding(bool val) { ApplyModFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_BINDED, val); }
+        void SetBinding(bool val) { ApplyModFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_BINDED,val); }
         bool IsSoulBound() const { return HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_BINDED); }
         bool IsBoundAccountWide() const { return GetProto()->Flags & ITEM_FLAG_BOA; }
         bool IsBindedNotWith(Player const* player) const;
@@ -299,20 +300,22 @@ class MANGOS_DLL_SPEC Item : public Object
 
         bool IsBag() const { return GetProto()->InventoryType == INVTYPE_BAG; }
         bool IsBroken() const { return GetUInt32Value(ITEM_FIELD_MAXDURABILITY) > 0 && GetUInt32Value(ITEM_FIELD_DURABILITY) == 0; }
-        bool CanBeTraded(bool mail = false) const;
+        bool CanBeTraded(bool mail = false, bool trade = false) const;
         void SetInTrade(bool b = true) { mb_in_trade = b; }
         bool IsInTrade() const { return mb_in_trade; }
 
         bool IsFitToSpellRequirements(SpellEntry const* spellInfo) const;
+        bool HasTriggeredByAuraSpell(SpellEntry const* spellInfo) const;
         bool IsTargetValidForItemUse(Unit* pUnitTarget);
         bool IsLimitedToAnotherMapOrZone(uint32 cur_mapId, uint32 cur_zoneId) const;
         bool GemsFitSockets() const;
 
-        uint32 GetCount() const { return GetUInt32Value(ITEM_FIELD_STACK_COUNT); }
-        void SetCount(uint32 value) { SetUInt32Value(ITEM_FIELD_STACK_COUNT, value); }
+        uint32 GetCount() const { return GetUInt32Value (ITEM_FIELD_STACK_COUNT); }
+        void SetCount(uint32 value) { SetUInt32Value (ITEM_FIELD_STACK_COUNT, value); }
         uint32 GetMaxStackCount() const { return GetProto()->GetMaxStackSize(); }
         uint8 GetGemCountWithID(uint32 GemID) const;
         uint8 GetGemCountWithLimitCategory(uint32 limitCategory) const;
+        uint8 GetJewelcraftingGemCount() const;
         InventoryResult CanBeMergedPartlyWith(ItemPrototype const* proto) const;
 
         uint8 GetSlot() const {return m_slot;}
@@ -320,7 +323,7 @@ class MANGOS_DLL_SPEC Item : public Object
         uint8 GetBagSlot() const;
         void SetSlot(uint8 slot) {m_slot = slot;}
         uint16 GetPos() const { return uint16(GetBagSlot()) << 8 | GetSlot(); }
-        void SetContainer(Bag* container) { m_container = container; }
+        void SetContainer(Bag *container) { m_container = container; }
 
         bool IsInBag() const { return m_container != NULL; }
         bool IsEquipped() const;
@@ -350,7 +353,7 @@ class MANGOS_DLL_SPEC Item : public Object
 
         // spell charges (signed but stored as unsigned)
         int32 GetSpellCharges(uint8 index/*0..5*/ = 0) const { return GetInt32Value(ITEM_FIELD_SPELL_CHARGES + index); }
-        void SetSpellCharges(uint8 index/*0..5*/, int32 value) { SetInt32Value(ITEM_FIELD_SPELL_CHARGES + index, value); }
+        void SetSpellCharges(uint8 index/*0..5*/, int32 value) { SetInt32Value(ITEM_FIELD_SPELL_CHARGES + index,value); }
         bool HasMaxCharges() const;
         void RestoreCharges();
 
@@ -374,14 +377,26 @@ class MANGOS_DLL_SPEC Item : public Object
             uState = state;
         }
 
-        bool HasQuest(uint32 quest_id) const override { return GetProto()->StartQuest == quest_id; }
-        bool HasInvolvedQuest(uint32 /*quest_id*/) const override { return false; }
+        bool HasQuest(uint32 quest_id) const { return GetProto()->StartQuest == quest_id; }
+        bool HasInvolvedQuest(uint32 /*quest_id*/) const { return false; }
         bool IsPotion() const { return GetProto()->IsPotion(); }
         bool IsConjuredConsumable() const { return GetProto()->IsConjuredConsumable(); }
 
-        void AddToClientUpdateList() override;
-        void RemoveFromClientUpdateList() override;
-        void BuildUpdateData(UpdateDataMapType& update_players) override;
+        void AddToClientUpdateList();
+        void RemoveFromClientUpdateList();
+        void BuildUpdateData(UpdateDataMapType& update_players);
+
+        // Item Refunding system
+        bool IsEligibleForRefund();
+        void SetPlayedtimeField(uint32 time) { SetInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME ,time); }
+        uint32 GetPlayedtimeField() { return GetInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME); }
+
+        // Soulbound trade system
+        void SetSoulboundTradeable(AllowedLooterSet* allowedLooters, Player* currentOwner, bool apply);
+        bool CheckSoulboundTradeExpire();
+
+        AllowedLooterSet allowedGUIDs;
+
     private:
         std::string m_text;
         uint8 m_slot;

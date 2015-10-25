@@ -3,7 +3,7 @@
 #####################################
 
 [MangosdConf]
-ConfVersion=2014030801
+ConfVersion=2010100901
 
 ###################################################################################################################
 # CONNECTIONS AND DIRECTORIES
@@ -37,13 +37,13 @@ ConfVersion=2014030801
 #                    hostname;port;username;password;database
 #                    .;/path/to/unix_socket/DIRECTORY or . for default path;username;password;database - use Unix sockets at Unix/Linux
 #
-#	LoginDatabaseConnections
-#	WorldDatabaseConnections
-#	CharacterDatabaseConnections
-#		 Amount of connections to database which will be used for SELECT queries. Maximum 16 connections per database.
-#		 Please, note, for data consistency only one connection for each database is used for transactions and async SELECTs.
-#		 So formula to find out how many connections will be established: X = ¹_connections + 1
-#		 Default: 1 connection for SELECT statements
+#   LoginDatabaseConnections
+#   WorldDatabaseConnections
+#   CharacterDatabaseConnections
+#        Amount of connections to database which will be used for SELECT queries. Maximum 16 connections per database.
+#        Please, note, for data consistency only one connection for each database is used for transactions and async SELECTs.
+#        So formula to find out how many connections will be established: X = n_connections + 1
+#        Default: 1 connection for SELECT statements
 #
 #    MaxPingTime
 #        Settings for maximum database-ping interval (minutes between pings)
@@ -140,10 +140,7 @@ BindIP = "0.0.0.0"
 #
 #    vmap.enableLOS
 #    vmap.enableHeight
-#        Enable/Disable VMaps support for line of sight and height calculation
-#        You need to extract the VMaps in order to enable those options
-#        Default: 1 (enable)
-#                 0 (disable)
+#       Deprecated (always enable)
 #
 #    vmap.ignoreSpellIds
 #        These spells are ignored for LoS calculation
@@ -197,6 +194,24 @@ BindIP = "0.0.0.0"
 #        Default: 1 (Enable)
 #                 0 (Disabled)
 #
+#    ACE mtmaps
+#    MapUpdate.Threads
+#        Number of threads to run if the binary was compiled with mtmaps support.
+#        Default: 3
+#        For stable works 1-3 threads (?) testing. Recommendation for low LA - (num of CPU - 1).
+#
+#    MapUpdate.DynamicThreadsCount
+#        Use dynamic threads number for update maps. Count changed in dependent ot server load from 1 to MapUpdate.Threads
+#        Default: 0 (Disabled)
+#                 1 (Enabled)
+#
+#    MapUpdate.LoadBalanceHighValue
+#    MapUpdate.LoadBalanceLowValue
+#        Used only if MapUpdate.DynamicThreadsCount is enabled. Fix high and low load value for change dynamic thread num
+#        Default: 0.8 (80%)  /0.2 (20%)
+#        Min:     0.5 (50%)  /0.0 (0%)
+#        Max:     1.0 (100%) /0.5 (50%)
+#
 ###################################################################################################################
 
 UseProcessors = 0
@@ -212,8 +227,6 @@ ChangeWeatherInterval = 600000
 PlayerSave.Interval = 900000
 PlayerSave.Stats.MinLevel = 0
 PlayerSave.Stats.SaveOnlyOnLogout = 1
-vmap.enableLOS = 1
-vmap.enableHeight = 1
 vmap.ignoreSpellIds = "7720"
 vmap.enableIndoorCheck = 1
 DetectPosCollision = 1
@@ -224,6 +237,10 @@ UpdateUptimeInterval = 10
 MaxCoreStuckTime = 0
 AddonChannel = 1
 CleanCharacterDB = 1
+MapUpdate.Threads = 1
+MapUpdate.DynamicThreadsCount = 0
+MapUpdate.LoadBalanceHighValue = 0.8
+MapUpdate.LoadBalanceLowValue = 0.2
 
 ###################################################################################################################
 # SERVER LOGGING
@@ -268,20 +285,17 @@ CleanCharacterDB = 1
 #    LogFilter_AchievementUpdates
 #    LogFilter_CreatureMoves
 #    LogFilter_TransportMoves
-#    LogFilter_PlayerMoves
 #    LogFilter_VisibilityChanges
 #    LogFilter_Weather
 #    LogFilter_DbStrictedCheck
-#    LogFilter_SQLText
 #    LogFilter_Pathfinding
-#    LogFilter_MapsLoading
-#    LogFilter_EventAiDev
-#    LogFilter_Calendar
-#        Log filters (active by default - meaning: the filter is active, hence the log is not displayed)
+#        Log filters (active by default)
 #        Default: 1 - not include with any log level
 #                 0 - include in log if log level permit
 #
 #    LogFilter_PeriodicAffects
+#    LogFilter_PlayerMoves
+#    LogFilter_SQLText
 #    LogFilter_AIAndMovegens
 #    LogFilter_PlayerStats
 #    LogFilter_Damage
@@ -304,10 +318,6 @@ CleanCharacterDB = 1
 #    DBErrorLogFile
 #        Log file of DB errors detected at server run
 #        Default: "DBErrors.log"
-#
-#    EventAIErrorLogFile
-#        Log file of EventAI errors detected at server run
-#        Default: "EventAIErrors.log"
 #
 #    CharLogFile
 #        Character operations logfile name
@@ -370,21 +380,17 @@ LogFilter_VisibilityChanges = 1
 LogFilter_Weather = 1
 LogFilter_DbStrictedCheck = 1
 LogFilter_Pathfinding = 1
-LogFilter_MapsLoading = 1
-LogFilter_EventAiDev = 1
 LogFilter_PeriodicAffects = 0
-LogFilter_PlayerMoves = 1
-LogFilter_SQLText = 1
+LogFilter_PlayerMoves = 0
+LogFilter_SQLText = 0
 LogFilter_AIAndMovegens = 0
 LogFilter_PlayerStats = 0
 LogFilter_Damage = 0
 LogFilter_Combat = 0
 LogFilter_SpellCast = 0
-LogFilter_Calendar = 1
 WorldLogFile = ""
 WorldLogTimestamp = 0
 DBErrorLogFile = "DBErrors.log"
-EventAIErrorLogFile = "EventAIErrors.log"
 CharLogFile = "Char.log"
 CharLogTimestamp = 0
 CharLogDump = 0
@@ -393,6 +399,117 @@ GmLogTimestamp = 0
 GmLogPerAccount = 0
 RaLogFile = ""
 LogColors = ""
+
+###################################################################################################################
+#   LEXICS CUTTER SYSTEM
+#
+#    Chat log parameters
+#        ChatLogEnable = 0
+#
+#    If this is enabled, all $d in file names are replaced with current date
+#    This does include innormative lexics log
+#        ChatLogDateSplit = 1
+#    If this is enabled, UTF8 header is written into new files
+#        ChatLogUTFHeader = 1
+#    If this is enabled, chat log will ignore messages with unprintable chars
+#        ChatLogIgnoreUnprintable = 1
+#
+#    Chat log files
+#        ChatLogChatFile = main_chat-$d.log
+#        ChatLogPartyFile = party_chat-$d.log
+#        ChatLogGuildFile = guild_chat-$d.log
+#        ChatLogWhisperFile = whisper_chat-$d.log
+#        ChatLogChannelFile = channel_chat-$d.log
+#        ChatLogRaidFile = raid_chat-$d.log
+#        ChatLogBattleGroundFile = bg_chat-$d.log
+#
+#    Chat log screen logging
+#        ChatLogChatScreen = 0
+#        ChatLogPartyScreen = 0
+#        ChatLogGuildScreen = 0
+#        ChatLogWhisperScreen = 0
+#        ChatLogChannelScreen = 0
+#        ChatLogRaidScreen = 0
+#        ChatLogBattleGroundScreen = 0
+#
+#    Lexics cutter parameters
+#        LexicsCutterEnable = 1
+#        LexicsCutterInnormativeCut = 1
+#        LexicsCutterCutReplacement = &!@^%!^&*!!!
+#        LexicsCutterLogFile = innormative-$d.log
+#        LexicsCutterScreenLog = 0
+#        LexicsCutterAnalogsFile = letter_analogs.txt
+#        LexicsCutterWordsFile = innormative_words.txt
+#
+#    Where to cut lexics
+#        LexicsCutInChat = 1
+#        LexicsCutInParty = 1
+#        LexicsCutInGuild = 1
+#        LexicsCutInWhisper = 1
+#        LexicsCutInChannel = 1
+#        LexicsCutInRaid = 1
+#        LexicsCutInBattleGround = 1
+#
+#    Ignore word spaces like: W O R D
+#        LexicsCutterIgnoreSpaces = 1
+#
+#    Ignore repeats like: WWOOOORRRRRD
+#        LexicsCutterIgnoreRepeats = 1
+#
+#    Action:
+#    ---   0: log only
+#    ---   1: sheep
+#    ---   2: stun
+#    ---   3: kill
+#    ---   4: leave 5 health
+#    ---   5: disable chat
+#    ---   6: stuck (works as stun + 50% health)
+#    ---   7: resurrection sickness
+#    ---   8: shear
+#        LexicsCutterAction = 0
+#        LexicsCutterActionDuration = 60000
+#
+#     Do not perform action on GM if this is enabled
+#        LexicsCutterNoActionOnGM = 1
+###################################################################################################################
+
+ChatLogEnable = 0
+ChatLogDateSplit = 1
+ChatLogUTFHeader = 1
+ChatLogIgnoreUnprintable = 1
+ChatLogChatFile = main_chat-$d.log
+ChatLogPartyFile = party_chat-$d.log
+ChatLogGuildFile = guild_chat-$d.log
+ChatLogWhisperFile = whisper_chat-$d.log
+ChatLogChannelFile = channel_chat-$d.log
+ChatLogRaidFile = raid_chat-$d.log
+ChatLogBattleGroundFile = bg_chat-$d.log
+ChatLogChatScreen = 0
+ChatLogPartyScreen = 0
+ChatLogGuildScreen = 0
+ChatLogWhisperScreen = 0
+ChatLogChannelScreen = 0
+ChatLogRaidScreen = 0
+ChatLogBattleGroundScreen = 0
+LexicsCutterEnable = 0
+LexicsCutterInnormativeCut = 1
+LexicsCutterCutReplacement = &!@^%!^&*!!!
+LexicsCutterLogFile = innormative-$d.log
+LexicsCutterScreenLog = 0
+LexicsCutterAnalogsFile = letter_analogs.txt
+LexicsCutterWordsFile = innormative_words.txt
+LexicsCutInChat = 1
+LexicsCutInParty = 1
+LexicsCutInGuild = 1
+LexicsCutInWhisper = 1
+LexicsCutInChannel = 1
+LexicsCutInRaid = 1
+LexicsCutInBattleGround = 1
+LexicsCutterIgnoreSpaces = 1
+LexicsCutterIgnoreRepeats = 1
+LexicsCutterAction = 0
+LexicsCutterActionDuration = 60000
+LexicsCutterNoActionOnGM = 1
 
 ###################################################################################################################
 # SERVER SETTINGS
@@ -556,6 +673,11 @@ LogColors = ""
 #        Amount of honor that new players will start with
 #        Default: 0
 #
+#    AllowHonorKillsTitles
+#        Allow characters to get titles, depending of honor kills amount (something like old 1.xx honor system)
+#        Default: 0 - disallow
+#                 1 - allow
+#
 #    MaxArenaPoints
 #        Max arena points that player can have.
 #        Default: 5000
@@ -592,16 +714,11 @@ LogColors = ""
 #        Max amount triggered spell casts in chain by one caster, prevent stack overflow crash
 #        Too Low value will make some correct triggered casts fail
 #                 0 (no limit)
-#        Default: 20
+#        Default: 10
 #
 #   BirthdayTime
-#        Set to birthday (date in unix time), By default 28th August 2005, when MaNGOS got it’s name
+#        Set to birthday (date in unix time), By default 28th August 2005, when MaNGOS got it's name
 #        Default: 1125180000
-#
-#   RabbitDay
-#        Set to Rabbit Day (date in unix time), only the day and month are considered, the year is not important
-#        Default: 0 (off)
-#        Suggested: 954547200 (April 1st, 2000)
 #
 #    Instance.IgnoreLevel
 #        Ignore level requirement to enter instance
@@ -662,6 +779,10 @@ LogColors = ""
 #        Increase to store more guild_bank events in table - minimum is 25 (GUILD_BANK_MAX_LOGS) for each guild_bank tab
 #        Useful when you don't want old log events to be overwritten by new, but increasing can slow down performance
 #        Default: 25
+#
+#    Loot.IgnoreChestGroupRulesFromDB
+#        Ignore database setting for loot rules for chests
+#        Default: 0 (disable)
 #
 #    TimerBar.Fatigue.GMLevel
 #        Disable/enable fatigue for security level (0..4) or high
@@ -744,6 +865,16 @@ LogColors = ""
 #                 0 - unsummon only for flying mounts
 #        Default: 1 - unsummon for any mount
 #
+#    PetSaveAllInDB
+#        Persmanent pet state saving in database
+#        Default: 0 - default mangos style, only permanent pets saved in DB
+#                 1 - all pets (including multipets and temporary summoned pets) saved in DB.
+#
+#    RaidFlags.Unique
+#        Set raid flags (assistant, main assistant, main tank) unique in raid
+#        Default: 0 - flags not unique
+#                 1 - flags unique, not more then 1 player may have this flag
+#
 #    ClientCacheVersion
 #        Client cache version for client cache data reset. Use any different from DB value and not recently used for triggering reset.
 #        Default: 0 (use DB value from world DB db_version.cache_id field)
@@ -776,10 +907,22 @@ LogColors = ""
 #        You can bypass this setting by typing "/script SetAllowLowLevelRaid(true/false)" command in chat
 #        Default: 10
 #
-#    PlayerCommands
-#        Should player chat be parsed for GM commands.
-#        Default: 1 (parse commands)
-#                 0 (ignore commands)
+#    CheckGOInPath
+#        Very simple check for gameobjects' presence on unit path (for example to avoid problems with teleport through closed doors).
+#        May use many CPU resources!
+#        Default: 0
+#
+#    CrowdControlHPBase
+#        Base HP part for calculation CrowdControl effects (from MAX HP!).
+#        Default: 0.1  (10% max HP)
+#        min:     0.0  (default mangos method)
+#        max:     1.0  (full CrowdControl, auras like Fear not breaked by damage anyway)
+#
+#    AllowTransferToCustomMap
+#        Allowing moving to maps, enter for which absent in AraeTrigger.dbc (by custom areatrigger_teleport entryes)
+#        Attention! Changing this option "on-the-fly" required reload areatrigger_teleport table!
+#        Default: 0 - disabled (only GM's may transfer to this maps
+#                 1 - enabled  (any player, fit to custom areatrigger_teleport condition, may transfer to this maps).
 #
 ###################################################################################################################
 
@@ -806,6 +949,7 @@ StartHeroicPlayerLevel = 55
 StartPlayerMoney = 0
 MaxHonorPoints = 75000
 StartHonorPoints = 0
+AllowHonorKillsTitles = 0
 MaxArenaPoints = 5000
 StartArenaPoints = 0
 InstantLogout = 1
@@ -814,9 +958,8 @@ AllFlightPaths = 0
 AlwaysMaxSkillForLevel = 0
 ActivateWeather = 1
 CastUnstuck = 1
-MaxSpellCastsInChain = 20
+MaxSpellCastsInChain = 10
 BirthdayTime = 1125180000
-RabbitDay = 0
 Instance.IgnoreLevel = 0
 Instance.IgnoreRaid = 0
 Instance.ResetTimeHour = 4
@@ -829,6 +972,7 @@ Quests.Weekly.ResetHour = 6
 Quests.IgnoreRaid = 0
 Guild.EventLogRecordsCount = 100
 Guild.BankEventLogRecordsCount = 25
+Loot.IgnoreChestGroupRulesFromDB = 1
 TimerBar.Fatigue.GMLevel = 4
 TimerBar.Fatigue.Max = 60
 TimerBar.Breath.GMLevel = 4
@@ -847,6 +991,9 @@ SkillChance.Prospecting = 0
 SkillChance.Milling = 0
 OffhandCheckAtTalentsReset = 0
 PetUnsummonAtMount = 1
+PetSaveAllInDB = 0
+RaidFlags.Unique = 0
+AllowFlightOnOldMaps = 0
 ClientCacheVersion = 0
 Event.Announce = 0
 BeepAtStart = 1
@@ -854,7 +1001,9 @@ ShowProgressBars = 1
 WaitAtStartupError = 0
 Motd = "Welcome to the Massive Network Game Object Server."
 Raid.MinLevel = 10
-PlayerCommands = 1
+CheckGOInPath = 0
+CrowdControlHPBase = 0.1
+AllowTransferToCustomMap = 0
 
 ###################################################################################################################
 # PLAYER INTERACTION
@@ -870,9 +1019,8 @@ PlayerCommands = 1
 #    AllowTwoSide.Interaction.Guild
 #    AllowTwoSide.Interaction.Auction
 #    AllowTwoSide.Interaction.Mail
-#    AllowTwoSide.Interaction.Calendar
 #        Allow or not common :chat(say,yell);channel(chat)group(join)guild(join);merge all auction houses for players from
-#        different teams, send mail to different team, calendar(invite player from different team)
+#        different teams, send mail to different team.
 #        Default: 0 (Not allowed)
 #                 1 (Allowed)
 #
@@ -901,10 +1049,32 @@ AllowTwoSide.Interaction.Group = 0
 AllowTwoSide.Interaction.Guild = 0
 AllowTwoSide.Interaction.Auction = 0
 AllowTwoSide.Interaction.Mail = 0
-AllowTwoSide.Interaction.Calendar = 0
 AllowTwoSide.WhoList = 0
 AllowTwoSide.AddFriend = 0
 TalentsInspecting = 1
+
+###################################################################################################################
+# AUTO BROADCAST
+#
+#    AutoBroadcast.On
+#        Enable auto broadcast
+#        Default: 0 - off
+#                 1 - on
+#
+#    AutoBroadcast.Center
+#        Display method
+#        Default: 0 - announce
+#                 1 - notify
+#                 2 - both
+#
+#    AutoBroadcast.Timer
+#        Timer for auto broadcast
+#
+###################################################################################################################
+
+AutoBroadcast.On = 0
+AutoBroadcast.Center = 0
+AutoBroadcast.Timer = 30000
 
 ###################################################################################################################
 # CREATURE AND GAMEOBJECT SETTINGS
@@ -919,10 +1089,6 @@ TalentsInspecting = 1
 #        Default: 1   - 100%
 #                 1.5 - 150%
 #                 0   - off (0%)
-#
-#    CreatureRespawnAggroDelay
-#        The delay between when a creature spawns and when it can be aggroed by nearby movement.
-#        Default: 5000 (5s)
 #
 #    CreatureFamilyFleeAssistanceRadius
 #        Radius which creature will use to seek for a near creature for assistance. Creature will flee to this creature.
@@ -1007,11 +1173,15 @@ TalentsInspecting = 1
 #        in game from other side
 #        Default: 100
 #
+#    Player.GSCalculationBase
+#        default (base) player Gear Score (GS) for calculate additional bonus for vehicles, scaled by GS.
+#        default: 190
+#        range: 1 - 384
+#
 ###################################################################################################################
 
 ThreatRadius = 100
 Rate.Creature.Aggro = 1
-CreatureRespawnAggroDelay = 5000
 CreatureFamilyFleeAssistanceRadius = 30
 CreatureFamilyAssistanceRadius = 10
 CreatureFamilyAssistanceDelay = 1500
@@ -1044,7 +1214,7 @@ ListenRange.TextEmote = 40
 ListenRange.Yell = 300
 GuidReserveSize.Creature = 100
 GuidReserveSize.GameObject = 100
-
+Player.GSCalculationBase = 190
 
 ###################################################################################################################
 # CHAT SETTINGS
@@ -1169,10 +1339,10 @@ Channel.SilentlyGMJoin = 0
 #        Default: 1 (enable)
 #                 0 (disable)
 #
-#    GM.InvisibleAura
-#        A spell that will be cast when a gm uses ".gm visible off" (Must be aura spell)
-#        Default: 37800 (50% Transparency)
-#                 0 (Disabled)
+#    GM.AnnounceBan
+#        If enabled bans and mutes are announced for all characters on realm with system message
+#        Default: 0 (disable)
+#                 1 (enable)
 #
 ###################################################################################################################
 
@@ -1187,7 +1357,7 @@ GM.LogTrade              = 1
 GM.StartLevel            = 1
 GM.LowerSecurity         = 0
 GM.AllowAchievementGain  = 1
-GM.InvisibleAura         = 37800
+GM.AnnounceBan           = 0
 
 ###################################################################################################################
 # VISIBILITY AND RADIUSES
@@ -1234,7 +1404,7 @@ GM.InvisibleAura         = 37800
 
 Visibility.GroupMode = 0
 Visibility.Distance.Continents    = 90
-Visibility.Distance.Instances     = 120
+Visibility.Distance.Instances     = 400
 Visibility.Distance.BGArenas      = 180
 Visibility.Distance.InFlight      = 100
 Visibility.Distance.Grey.Unit   = 1
@@ -1544,6 +1714,11 @@ BattleGround.Random.ResetHour = 6
 #        Default: 0 (disable)
 #                 1 (enable)
 #
+#    Arena.QueueAnnouncer.Start
+#        Enable arena queue announcer posting to chat at Arena start
+#        Default: 0 (disable)
+#                 1 (enable)
+#
 #    Arena.ArenaSeason.ID
 #        Current area season id show in client
 #        Default: 1
@@ -1560,6 +1735,22 @@ BattleGround.Random.ResetHour = 6
 #        Default Personal Rating at team creation
 #        Default: -1 (use season dependent default value)
 #
+#    Arena.LoserNoChange
+#        If winner or loser rating is below this limit, loser loses no rating
+#        Default: 0 (disable)
+#                 1400
+#
+#    Arena.LoserHalfChange
+#        If loser rating is below this limit, he loses half of rating
+#        Default: 0 (disable)
+#                 1500
+#
+#    Arena.RemoveAurasWithDurationLess = 30
+#    At start arena remove auras with duration, less then this value (in seconds)
+#        Default: 30s. (wowwiki reports at 25 s., patchnotes 3.0.2 reports on 30s.)
+#        min:      0s. (not remove)
+#        max:     60s.
+#
 ###################################################################################################################
 
 Arena.MaxRatingDifference = 150
@@ -1568,33 +1759,14 @@ Arena.AutoDistributePoints = 0
 Arena.AutoDistributeInterval = 7
 Arena.QueueAnnouncer.Join = 0
 Arena.QueueAnnouncer.Exit = 0
+Arena.QueueAnnouncer.Start = 0
 Arena.ArenaSeason.ID = 1
 Arena.ArenaSeasonPrevious.ID = 0
 Arena.StartRating = -1
 Arena.StartPersonalRating = -1
-
-###################################################################################################################
-# OUTDOOR PVP CONFIG
-#
-#    OutdoorPvp.SIEnabled               #Enable Silithus Outdoor pvp
-#    OutdoorPvp.EPEnabled               #Enable Eastern Plaguelands Outdoor pvp
-#    OutdoorPvp.HPEnabled               #Enable Hellfire Peninsula Outdoor pvp
-#    OutdoorPvp.ZMEnabled               #Enable Zangarmarsh Outdoor pvp
-#    OutdoorPvp.TFEnabled               #Enable Terokkar Forest  Outdoor pvp
-#    OutdoorPvp.NAEnabled               #Enable Halaa (Nagrand) Outdoor pvp
-#    OutdoorPvp.GHEnabled               #Enable Venture Bay (Grizzly Hills) Outdoor pvp
-#        Default: 1 (enable)
-#                 0 (disable)
-#
-###################################################################################################################
-
-OutdoorPvp.SIEnabled = 1
-OutdoorPvp.EPEnabled = 1
-OutdoorPvp.HPEnabled = 1
-OutdoorPvp.ZMEnabled = 1
-OutdoorPvp.TFEnabled = 1
-OutdoorPvp.NAEnabled = 1
-OutdoorPvp.GHEnabled = 1
+Arena.LoserNoChange = 0
+Arena.LoserHalfChange = 0
+Arena.RemoveAurasWithDurationLess = 30
 
 ###################################################################################################################
 # NETWORK CONFIG
@@ -1692,6 +1864,36 @@ SOAP.IP = 127.0.0.1
 SOAP.Port = 7878
 
 ###################################################################################################################
+# ANTICHEAT
+# Initially from gimly, CWN && many other. current from /dev/rsa
+# all other config optons moved to SQL
+#
+#    Anticheat.Enable
+#        Enable Movement Anticheat
+#        Default: 0 - off
+#                 1 - on
+#
+#    Anticheat.DelayAfterAction
+#        Delay new action after occured action.
+#        Default: 30 seconds - 30
+#
+#    Anticheat.GmLevel
+#        Only accounts that are below this gm-level or exact at the same, are reported for cheating.
+#        Default: Only normal Players - 0
+#
+#    Anticheat.Warden
+#        Enable Warden from TOM_RUS checks
+#        Default: 0 - off
+#                 1 - on
+#
+###################################################################################################################
+
+Anticheat.Enable = 0
+Anticheat.DelayAfterAction = 30
+Anticheat.GmLevel = 0
+Anticheat.Warden  = 0
+
+###################################################################################################################
 #    CharDelete.Method
 #        Character deletion behavior
 #        Default: 0  - Completely remove the character from the database
@@ -1714,6 +1916,186 @@ SOAP.Port = 7878
 #
 ###################################################################################################################
 
-CharDelete.Method = 0
-CharDelete.MinLevel = 0
+CharDelete.Method = 1
+CharDelete.MinLevel = 10
 CharDelete.KeepDays = 30
+
+###################################################################################################################
+#    Refer-A-Friend system by Mas0n
+#    RAF.MaxGrantLevel       = 60  (max level for granting level bonuses)
+#    RAF.MaxReferals         = 5   (max referals for one account)
+#    RAF.MaxReferers         = 5   (max referred accounts for one account)
+#    Rate.RAF.XP             = 3   (XP bonus for referred friends in party)
+#    Rate.RAF.LevelPerLevel  = 0.5 (bonus levels per referal level)
+#
+###################################################################################################################
+RAF.MaxGrantLevel       = 60
+RAF.MaxReferals         = 5
+RAF.MaxReferers         = 5
+Rate.RAF.XP             = 3
+Rate.RAF.LevelPerLevel  = 0.5
+
+
+###################################################################################################################
+#    LFG Dungeon finder system
+#
+#    LFR.Enable              = 0
+#        enabling Raid finder
+#    LFG.Enable              = 0
+#        enabling Dungeon finder
+#    LFG.Debug              = 0
+#        enabling Dungeon finder debug mode
+#    LFR.Extend              = 0
+#        enabling Raid finder extended operations (not blizzlike!)
+#    LFG.MaxKicks            = 5
+#        max number of kick from group before group disband
+#    LFG.OnlyLastEncounterForCompleteDungeon = 0
+#        need complete only last encounter for dungeon complete (not blizzlike!)
+#
+###################################################################################################################
+LFR.Enable              = 1
+LFG.Enable              = 1
+LFG.Debug               = 0
+LFR.Extend              = 0
+LFG.MaxKicks            = 5
+LFG.OnlyLastEncounterForCompleteDungeon = 0
+
+###################################################################################################################
+# PLAYERBOTAI CONFIGURATION
+#
+#    PlayerbotAI.DisableBots
+#        Default: 0 - off
+#                 1 - on
+#
+#    PlayerbotAI.SharedBots
+#        Allow bots to be shared from other accounts
+#        Default: 0 - off
+#                 1 - on
+#
+#    PlayerbotAI.DebugWhisper
+#        Enable debug output by whispering master
+#        Default: 0 - off
+#
+#    PlayerbotAI.RestrictBotLevel
+#        Restrict the allowed bot level (Current Max 80)
+#        Default: 80
+#
+#    PlayerbotAI.MinBotLevel
+#        Minimum allowed bot level
+#        Default: 1
+#
+#    PlayerbotAI.AllowSummonOppositeFaction
+#        Allow or not to summon bots from opposite faction
+#        Default: 0 - off
+#                 1 - on
+#
+#    PlayerbotAI.Collect.Combat
+#        Enable collection option for after combat corpse loot ( needs to be on to loot corpses even for quest item)
+#                 0 - off
+#        Default: 1 - on
+#
+#    PlayerbotAI.Collect.Quest
+#        Enable collection option to loot items needed for Quests
+#                 0 - off
+#        Default: 1 - on
+#
+#    PlayerbotAI.Collect.Profession
+#        Enable collection option to loot items such as herbs,mine nodes and ect
+#                 0 - off
+#        Default: 1 - on
+#
+#    PlayerbotAI.Collect.Loot
+#        Enable collection option to loot items like trash and ect
+#                 0 - off
+#        Default: 1 - on
+#
+#    PlayerbotAI.Collect.Skin
+#        Enable collection option to skin corpse after they been looted
+#                 0 - off
+#        Default: 1 - on
+#
+#    PlayerbotAI.Collect.Objects
+#        Enable collection options nearby objects 
+#                 0 - off
+#        Default: 1 - on
+#
+#    PlayerbotAI.SellGarbage
+#        Allow bots to automatically sell all [GRAY|POOR] quality items as the player activates vendor
+#        Default: 0 - off
+#                 1 - on
+#
+###################################################################################################################
+
+PlayerbotAI.DisableBots = 1
+PlayerbotAI.SharedBots = 0
+PlayerbotAI.DebugWhisper = 0
+PlayerbotAI.FollowDistanceMin = 0.5
+PlayerbotAI.FollowDistanceMax = 1.0
+PlayerbotAI.MaxNumBots = 9
+PlayerbotAI.RestrictBotLevel = 80
+PlayerbotAI.MinBotLevel = 1
+PlayerbotAI.AllowSummonOppositeFaction = 0
+PlayerbotAI.Collect.Combat = 0
+PlayerbotAI.Collect.Quest = 0
+PlayerbotAI.Collect.Profession = 0
+PlayerbotAI.Collect.Loot = 0
+PlayerbotAI.Collect.Skin = 0
+PlayerbotAI.Collect.Objects = 0
+PlayerbotAI.SellGarbage = 0
+
+###################################################################################################################
+# Virtual map serving system (VMSS) configuration
+#
+#    VMSS.Enable
+#        Enabling VMSS support (signals handling)
+#        Default: 0 - off
+#                 1 - on
+#
+#    VMSS.MaxThreadBreaks
+#        Maximum single instance map fails before stopping world
+#        Default: 5
+#
+#    VMSS.ThreadBreakRememberTime
+#        Time (in seconds) before cleaning counter of MaxThreadBreaks
+#        Default: 3600 (1 hour)
+#
+#    VMSS.MapFreeMethod
+#        Method for freeing breaked map
+#        0 - safe cleaning (clean auras, save and logout player)
+#        1 - not safe cleaning (kick players, not clean auras, not save players/worldstates)
+#        2 - not safe cleaning (another type - logout players without save)
+#        Default: 0
+#
+#    VMSS.FreezeCheckPeriod
+#        Time period (in milliseconds) for activate FreezeDetect thread
+#        Default: 1000 (1 sec) - default mangos freeze detect period.
+#
+#    VMSS.MapFreezeDetectTime
+#        Time (in milliseconds) for detect freeze in map thread
+#        Default: 1000 (1 sec)
+#
+###################################################################################################################
+VMSS.Enable = 0
+VMSS.MaxThreadBreaks = 5
+VMSS.ThreadBreakRememberTime = 600
+VMSS.MapFreeMethod = 1
+VMSS.FreezeCheckPeriod = 1000
+VMSS.MapFreezeDetectTime = 2000
+VMSS.TrySkipFirstThreadBreak = 1
+VMSS.ForceUnloadDelay = 3000
+
+###################################################################################################################
+#    Duel Reset System
+#
+#    DuelReset.Enable
+#        Enable duel reset script that resets all Arena Cooldows, set full hp/mana and erase all debuffs. (Need complete DuelReset.areaIds) -- Not Blizzlike
+#        Default: 0 (disabled)
+#                 1 (enabled)
+#
+#    DuelReset.AreaIds
+#        List of area's ids where Duel Reset Script will be enabled. With delimiter ','. You can lookup areas going with a GM to X zone and typing .gps
+#        Default: "12,14,4570" Outdoor Stormwind, Outdoor Orgrimmar, Dalaran's Circle of Wills 
+#
+###################################################################################################################
+DuelReset.Enable = 0
+DuelReset.AreaIds = "12,14,4570"

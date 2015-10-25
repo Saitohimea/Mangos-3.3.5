@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,16 +28,16 @@
 class ChannelMgr
 {
     public:
-        typedef std::map<std::wstring, Channel*> ChannelMap;
+        typedef std::map<std::wstring,Channel*> ChannelMap;
         ChannelMgr() {}
         ~ChannelMgr();
 
-        Channel* GetJoinChannel(std::string name, uint32 channel_id);
-        Channel* GetChannel(std::string name, Player* p, bool pkt = true);
+        Channel *GetJoinChannel(std::string name, uint32 channel_id);
+        Channel *GetChannel(std::string name, Player *p, bool pkt = true);
         void LeftChannel(std::string name);
     private:
         ChannelMap channels;
-        void MakeNotOnPacket(WorldPacket* data, std::string name);
+        void MakeNotOnPacket(WorldPacket *data, std::string name);
 };
 
 class AllianceChannelMgr : public ChannelMgr {};

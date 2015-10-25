@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,45 +27,45 @@ class BigNumber
 {
     public:
         BigNumber();
-        BigNumber(const BigNumber& bn);
+        BigNumber(const BigNumber &bn);
         BigNumber(uint32);
         ~BigNumber();
 
         void SetDword(uint32);
         void SetQword(uint64);
-        void SetBinary(const uint8* bytes, int len);
-        void SetHexStr(const char* str);
+        void SetBinary(const uint8 *bytes, int len);
+        void SetHexStr(const char *str);
 
         void SetRand(int numbits);
 
-        BigNumber operator=(const BigNumber& bn);
+        BigNumber operator=(const BigNumber &bn);
 
-        BigNumber operator+=(const BigNumber& bn);
-        BigNumber operator+(const BigNumber& bn)
+        BigNumber operator+=(const BigNumber &bn);
+        BigNumber operator+(const BigNumber &bn)
         {
             BigNumber t(*this);
             return t += bn;
         }
-        BigNumber operator-=(const BigNumber& bn);
-        BigNumber operator-(const BigNumber& bn)
+        BigNumber operator-=(const BigNumber &bn);
+        BigNumber operator-(const BigNumber &bn)
         {
             BigNumber t(*this);
             return t -= bn;
         }
-        BigNumber operator*=(const BigNumber& bn);
-        BigNumber operator*(const BigNumber& bn)
+        BigNumber operator*=(const BigNumber &bn);
+        BigNumber operator*(const BigNumber &bn)
         {
             BigNumber t(*this);
             return t *= bn;
         }
-        BigNumber operator/=(const BigNumber& bn);
-        BigNumber operator/(const BigNumber& bn)
+        BigNumber operator/=(const BigNumber &bn);
+        BigNumber operator/(const BigNumber &bn)
         {
             BigNumber t(*this);
             return t /= bn;
         }
-        BigNumber operator%=(const BigNumber& bn);
-        BigNumber operator%(const BigNumber& bn)
+        BigNumber operator%=(const BigNumber &bn);
+        BigNumber operator%(const BigNumber &bn)
         {
             BigNumber t(*this);
             return t %= bn;
@@ -73,21 +73,22 @@ class BigNumber
 
         bool isZero() const;
 
-        BigNumber ModExp(const BigNumber& bn1, const BigNumber& bn2);
-        BigNumber Exp(const BigNumber&);
+        BigNumber ModExp(const BigNumber &bn1, const BigNumber &bn2);
+        BigNumber Exp(const BigNumber &);
 
         int GetNumBytes(void);
 
-        struct bignum_st* BN() { return _bn; }
+        struct bignum_st *BN() { return _bn; }
 
         uint32 AsDword();
         uint8* AsByteArray(int minSize = 0, bool reverse = true);
 
-        const char* AsHexStr();
-        const char* AsDecStr();
+        const char *AsHexStr();
+        const char *AsDecStr();
 
     private:
-        struct bignum_st* _bn;
-        uint8* _array;
+        void ClearArraysMap();
+        struct bignum_st *_bn;
+        std::map<int, uint8*> arraysMap;
 };
 #endif

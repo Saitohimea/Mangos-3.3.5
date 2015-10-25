@@ -1,4 +1,5 @@
-# This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+#
+# Copyright (C) 2005-2012 MaNGOS project <http://getmangos.com/>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 
 # Specify ace lib that was build externally
 # add_library(ace SHARED IMPORTED)
@@ -54,3 +56,4 @@ if(WIN32)
     )
   endforeach(DIR)
 endif()
+

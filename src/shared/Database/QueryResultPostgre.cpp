@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,24 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #ifdef DO_POSTGRESQL
 
 #include "DatabaseEnv.h"
 
-QueryResultPostgre::QueryResultPostgre(PGresult* result, uint64 rowCount, uint32 fieldCount) :
+QueryResultPostgre::QueryResultPostgre(PGresult *result, uint64 rowCount, uint32 fieldCount) :
     QueryResult(rowCount, fieldCount), mResult(result),  mTableIndex(0)
 {
 
     mCurrentRow = new Field[mFieldCount];
     MANGOS_ASSERT(mCurrentRow);
 
-    for (uint32 i = 0; i < mFieldCount; ++i)
-        { mCurrentRow[i].SetType(ConvertNativeType(PQftype(result, i))); }
+    for (uint32 i = 0; i < mFieldCount; i++)
+        mCurrentRow[i].SetType(ConvertNativeType(PQftype( result, i )));
 }
 
 QueryResultPostgre::~QueryResultPostgre()
@@ -42,7 +39,7 @@ QueryResultPostgre::~QueryResultPostgre()
 bool QueryResultPostgre::NextRow()
 {
     if (!mResult)
-        { return false; }
+        return false;
 
     if (mTableIndex >= mRowCount)
     {
@@ -51,11 +48,11 @@ bool QueryResultPostgre::NextRow()
     }
 
     char* pPQgetvalue;
-    for (int j = 0; j < mFieldCount; ++j)
+    for (int j = 0; j < mFieldCount; j++)
     {
         pPQgetvalue = PQgetvalue(mResult, mTableIndex, j);
-        if (pPQgetvalue && !(*pPQgetvalue))
-            { pPQgetvalue = NULL; }
+        if(pPQgetvalue && !(*pPQgetvalue))
+            pPQgetvalue = NULL;
 
         mCurrentRow[j].SetValue(pPQgetvalue);
     }
@@ -66,8 +63,11 @@ bool QueryResultPostgre::NextRow()
 
 void QueryResultPostgre::EndQuery()
 {
-    delete[] mCurrentRow;
-    mCurrentRow = 0;
+    if (mCurrentRow)
+    {
+        delete [] mCurrentRow;
+        mCurrentRow = 0;
+    }
 
     if (mResult)
     {
@@ -77,7 +77,7 @@ void QueryResultPostgre::EndQuery()
 }
 
 // see types in #include <postgre/pg_type.h>
-enum Field::DataTypes QueryResultPostgre::ConvertNativeType(Oid  pOid) const
+enum Field::DataTypes QueryResultPostgre::ConvertNativeType(Oid  pOid ) const
 {
     switch (pOid)
     {
@@ -112,12 +112,12 @@ enum Field::DataTypes QueryResultPostgre::ConvertNativeType(Oid  pOid) const
             return Field::DB_TYPE_INTEGER;
         case BOOLOID:
             return Field::DB_TYPE_BOOL;                     // Bool
-            /*
-                    case BOXOID:    Rect;
-                    case LINEOID:   Rect;
-                    case VARBITOID: BitArray;
-                    case BYTEAOID:  ByteArray;
-            */
+/*
+        case BOXOID:    Rect;
+        case LINEOID:   Rect;
+        case VARBITOID: BitArray;
+        case BYTEAOID:  ByteArray;
+*/
         case LSEGOID:
         case OIDVECTOROID:
         case PATHOID:

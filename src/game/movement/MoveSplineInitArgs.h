@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,18 +22,15 @@
 #include "MoveSplineFlag.h"
 #include <G3D/Vector3.h>
 
-class Unit;
-
 namespace Movement
 {
     typedef std::vector<Vector3> PointsArray;
 
     union FacingInfo
     {
-        struct
-        {
-            float x, y, z;
-        } f;
+        struct{
+            float x,y,z;
+        }f;
         uint64  target;
         float   angle;
 
@@ -44,26 +41,26 @@ namespace Movement
 
     struct MoveSplineInitArgs
     {
-            MoveSplineInitArgs(size_t path_capacity = 16) : path_Idx_offset(0),
-                velocity(0.f), parabolic_amplitude(0.f), time_perc(0.f), splineId(0), initialOrientation(0.f)
-            {
-                path.reserve(path_capacity);
-            }
+        MoveSplineInitArgs(size_t path_capacity = 16) : path_Idx_offset(0),
+            velocity(0.f), parabolic_amplitude(0.f), time_perc(0.f), splineId(0), initialOrientation(0.f)
+        {
+            path.reserve(path_capacity);
+        }
 
-            PointsArray path;
-            FacingInfo facing;
-            MoveSplineFlag flags;
-            int32 path_Idx_offset;
-            float velocity;
-            float parabolic_amplitude;
-            float time_perc;
-            uint32 splineId;
-            float initialOrientation;
+        PointsArray path;
+        FacingInfo facing;
+        MoveSplineFlag flags;
+        int32 path_Idx_offset;
+        float velocity;
+        float parabolic_amplitude;
+        float time_perc;
+        uint32 splineId;
+        float initialOrientation;
 
-            /** Returns true to show that the arguments were configured correctly and MoveSpline initialization will succeed. */
-            bool Validate(Unit* unit) const;
-        private:
-            bool _checkPathBounds() const;
+        /** Returns true to show that the arguments were configured correctly and MoveSpline initialization will succeed. */
+        bool Validate() const;
+    private:
+        bool _checkPathBounds() const;
     };
 }
 

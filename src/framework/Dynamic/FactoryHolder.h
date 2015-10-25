@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #ifndef MANGOS_FACTORY_HOLDER
@@ -25,87 +22,39 @@
 #include "Platform/Define.h"
 #include "Utilities/TypeList.h"
 #include "ObjectRegistry.h"
-#include "Policies/Singleton.h"
+#include "Policies/SingletonImp.h"
 
-template < class T, class Key = std::string >
-/**
- * @brief FactoryHolder holds a factory object of a specific type
- *
+/** FactoryHolder holds a factory object of a specific type
  */
+template<class T, class Key = std::string>
 class MANGOS_DLL_DECL FactoryHolder
 {
     public:
-        /**
-         * @brief
-         *
-         */
         typedef ObjectRegistry<FactoryHolder<T, Key >, Key > FactoryHolderRegistry;
-        /**
-         * @brief
-         *
-         */
         typedef MaNGOS::Singleton<FactoryHolderRegistry > FactoryHolderRepository;
 
-        /**
-         * @brief
-         *
-         * @param k
-         */
         FactoryHolder(Key k) : i_key(k) {}
-        /**
-         * @brief
-         *
-         */
         virtual ~FactoryHolder() {}
-        /**
-         * @brief
-         *
-         * @return Key
-         */
         inline Key key() const { return i_key; }
 
-        /**
-         * @brief
-         *
-         */
         void RegisterSelf(void) { FactoryHolderRepository::Instance().InsertItem(this, i_key); }
-        /**
-         * @brief
-         *
-         */
         void DeregisterSelf(void) { FactoryHolderRepository::Instance().RemoveItem(this, false); }
 
-        /**
-         * @brief Abstract Factory create method
-         *
-         * @param data
-         * @return T
-         */
-        virtual T* Create(void* data = NULL) const = 0;
+        /// Abstract Factory create method
+        virtual T* Create(void *data = NULL) const = 0;
     private:
-        Key i_key; /**< TODO */
+        Key i_key;
 };
 
-template<class T>
-/**
- * @brief Permissible is a classic way of letting the object decide whether how good they handle things.
- *
- * This is not retricted to factory selectors.
+/** Permissible is a classic way of letting the object decide
+ * whether how good they handle things.  This is not retricted
+ * to factory selectors.
  */
+template<class T>
 class Permissible
 {
     public:
-        /**
-         * @brief
-         *
-         */
         virtual ~Permissible() {}
-        /**
-         * @brief
-         *
-         * @param
-         * @return int
-         */
-        virtual int Permit(const T*) const = 0;
+        virtual int Permit(const T *) const = 0;
 };
 #endif

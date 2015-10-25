@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,48 +26,48 @@
 
 class WorldSession;
 
-#define GOSSIP_MAX_MENU_ITEMS       32                      // Client supports showing max 32 items
-#define DEFAULT_GOSSIP_MESSAGE      0xffffff
+#define GOSSIP_MAX_MENU_ITEMS 64                            // client supported items unknown, but provided number must be enough
+#define DEFAULT_GOSSIP_MESSAGE              0xffffff
 
 enum Gossip_Option
 {
-    GOSSIP_OPTION_NONE              = 0,                    // UNIT_NPC_FLAG_NONE                (0)
-    GOSSIP_OPTION_GOSSIP            = 1,                    // UNIT_NPC_FLAG_GOSSIP              (1)
-    GOSSIP_OPTION_QUESTGIVER        = 2,                    // UNIT_NPC_FLAG_QUESTGIVER          (2)
-    GOSSIP_OPTION_VENDOR            = 3,                    // UNIT_NPC_FLAG_VENDOR              (128)
-    GOSSIP_OPTION_TAXIVENDOR        = 4,                    // UNIT_NPC_FLAG_TAXIVENDOR          (8192)
-    GOSSIP_OPTION_TRAINER           = 5,                    // UNIT_NPC_FLAG_TRAINER             (16)
-    GOSSIP_OPTION_SPIRITHEALER      = 6,                    // UNIT_NPC_FLAG_SPIRITHEALER        (16384)
-    GOSSIP_OPTION_SPIRITGUIDE       = 7,                    // UNIT_NPC_FLAG_SPIRITGUIDE         (32768)
-    GOSSIP_OPTION_INNKEEPER         = 8,                    // UNIT_NPC_FLAG_INNKEEPER           (65536)
-    GOSSIP_OPTION_BANKER            = 9,                    // UNIT_NPC_FLAG_BANKER              (131072)
-    GOSSIP_OPTION_PETITIONER        = 10,                   // UNIT_NPC_FLAG_PETITIONER          (262144)
-    GOSSIP_OPTION_TABARDDESIGNER    = 11,                   // UNIT_NPC_FLAG_TABARDDESIGNER      (524288)
-    GOSSIP_OPTION_BATTLEFIELD       = 12,                   // UNIT_NPC_FLAG_BATTLEFIELDPERSON   (1048576)
-    GOSSIP_OPTION_AUCTIONEER        = 13,                   // UNIT_NPC_FLAG_AUCTIONEER          (2097152)
-    GOSSIP_OPTION_STABLEPET         = 14,                   // UNIT_NPC_FLAG_STABLE              (4194304)
-    GOSSIP_OPTION_ARMORER           = 15,                   // UNIT_NPC_FLAG_ARMORER             (4096)
-    GOSSIP_OPTION_UNLEARNTALENTS    = 16,                   // UNIT_NPC_FLAG_TRAINER             (16) (bonus option for GOSSIP_OPTION_TRAINER)
-    GOSSIP_OPTION_UNLEARNPETSKILLS  = 17,                   // UNIT_NPC_FLAG_TRAINER             (16) (bonus option for GOSSIP_OPTION_TRAINER)
+    GOSSIP_OPTION_NONE              = 0,                    // UNIT_NPC_FLAG_NONE               (0)
+    GOSSIP_OPTION_GOSSIP            = 1,                    // UNIT_NPC_FLAG_GOSSIP             (1)
+    GOSSIP_OPTION_QUESTGIVER        = 2,                    // UNIT_NPC_FLAG_QUESTGIVER         (2)
+    GOSSIP_OPTION_VENDOR            = 3,                    // UNIT_NPC_FLAG_VENDOR             (128)
+    GOSSIP_OPTION_TAXIVENDOR        = 4,                    // UNIT_NPC_FLAG_TAXIVENDOR         (8192)
+    GOSSIP_OPTION_TRAINER           = 5,                    // UNIT_NPC_FLAG_TRAINER            (16)
+    GOSSIP_OPTION_SPIRITHEALER      = 6,                    // UNIT_NPC_FLAG_SPIRITHEALER       (16384)
+    GOSSIP_OPTION_SPIRITGUIDE       = 7,                    // UNIT_NPC_FLAG_SPIRITGUIDE        (32768)
+    GOSSIP_OPTION_INNKEEPER         = 8,                    // UNIT_NPC_FLAG_INNKEEPER          (65536)
+    GOSSIP_OPTION_BANKER            = 9,                    // UNIT_NPC_FLAG_BANKER             (131072)
+    GOSSIP_OPTION_PETITIONER        = 10,                   // UNIT_NPC_FLAG_PETITIONER         (262144)
+    GOSSIP_OPTION_TABARDDESIGNER    = 11,                   // UNIT_NPC_FLAG_TABARDDESIGNER     (524288)
+    GOSSIP_OPTION_BATTLEFIELD       = 12,                   // UNIT_NPC_FLAG_BATTLEFIELDPERSON  (1048576)
+    GOSSIP_OPTION_AUCTIONEER        = 13,                   // UNIT_NPC_FLAG_AUCTIONEER         (2097152)
+    GOSSIP_OPTION_STABLEPET         = 14,                   // UNIT_NPC_FLAG_STABLE             (4194304)
+    GOSSIP_OPTION_ARMORER           = 15,                   // UNIT_NPC_FLAG_ARMORER            (4096)
+    GOSSIP_OPTION_UNLEARNTALENTS    = 16,                   // UNIT_NPC_FLAG_TRAINER            (16) (bonus option for GOSSIP_OPTION_TRAINER)
+    GOSSIP_OPTION_UNLEARNPETSKILLS  = 17,                   // UNIT_NPC_FLAG_TRAINER            (16) (bonus option for GOSSIP_OPTION_TRAINER)
     GOSSIP_OPTION_MAILBOX           = 18,                   // UNIT_NPC_FLAG_GOSSIP             (1)
     GOSSIP_OPTION_MAX
 };
 
 enum GossipOptionIcon
 {
-    GOSSIP_ICON_CHAT                = 0,                    // white chat bubble
-    GOSSIP_ICON_VENDOR              = 1,                    // brown bag
-    GOSSIP_ICON_TAXI                = 2,                    // flight
-    GOSSIP_ICON_TRAINER             = 3,                    // book
-    GOSSIP_ICON_INTERACT_1          = 4,                    // interaction wheel
-    GOSSIP_ICON_INTERACT_2          = 5,                    // interaction wheel
-    GOSSIP_ICON_MONEY_BAG           = 6,                    // brown bag with yellow dot
-    GOSSIP_ICON_TALK                = 7,                    // white chat bubble with black dots
-    GOSSIP_ICON_TABARD              = 8,                    // tabard
-    GOSSIP_ICON_BATTLE              = 9,                    // two swords
-    GOSSIP_ICON_DOT                 = 10,                   // yellow dot
-    GOSSIP_ICON_CHAT_11             = 11,                   // This and below are most the same visual as GOSSIP_ICON_CHAT
-    GOSSIP_ICON_CHAT_12             = 12,                   // but are still used for unknown reasons.
+    GOSSIP_ICON_CHAT                = 0,                    //white chat bubble
+    GOSSIP_ICON_VENDOR              = 1,                    //brown bag
+    GOSSIP_ICON_TAXI                = 2,                    //flight
+    GOSSIP_ICON_TRAINER             = 3,                    //book
+    GOSSIP_ICON_INTERACT_1          = 4,                    //interaction wheel
+    GOSSIP_ICON_INTERACT_2          = 5,                    //interaction wheel
+    GOSSIP_ICON_MONEY_BAG           = 6,                    //brown bag with yellow dot
+    GOSSIP_ICON_TALK                = 7,                    //white chat bubble with black dots
+    GOSSIP_ICON_TABARD              = 8,                    //tabard
+    GOSSIP_ICON_BATTLE              = 9,                    //two swords
+    GOSSIP_ICON_DOT                 = 10,                   //yellow dot
+    GOSSIP_ICON_CHAT_11             = 11,                   //This and below are most the same visual as GOSSIP_ICON_CHAT
+    GOSSIP_ICON_CHAT_12             = 12,                   //but are still used for unknown reasons.
     GOSSIP_ICON_CHAT_13             = 13,
     GOSSIP_ICON_CHAT_14             = 14,                   // probably invalid
     GOSSIP_ICON_CHAT_15             = 15,                   // probably invalid
@@ -79,7 +79,7 @@ enum GossipOptionIcon
     GOSSIP_ICON_MAX
 };
 
-// POI icons. Many more exist, list not complete.
+//POI icons. Many more exist, list not complete.
 enum Poi_Icon
 {
     ICON_POI_BLANK              =   0,                      // Blank (not visible), in 2.4.3 have value 15 with 1..15 values in 0..14 range
@@ -185,7 +185,7 @@ class MANGOS_DLL_SPEC GossipMenu
             return m_gItems.empty();
         }
 
-        GossipMenuItem const& GetItem(unsigned int Id)
+        GossipMenuItem const& GetItem( unsigned int Id )
         {
             return m_gItems[ Id ];
         }
@@ -195,9 +195,9 @@ class MANGOS_DLL_SPEC GossipMenu
             return m_gItemsData[indexId];
         }
 
-        uint32 MenuItemSender(unsigned int ItemId);
-        uint32 MenuItemAction(unsigned int ItemId);
-        bool MenuItemCoded(unsigned int ItemId);
+        uint32 MenuItemSender( unsigned int ItemId );
+        uint32 MenuItemAction( unsigned int ItemId );
+        bool MenuItemCoded( unsigned int ItemId );
 
         void ClearMenu();
 
@@ -219,7 +219,7 @@ class QuestMenu
         QuestMenu();
         ~QuestMenu();
 
-        void AddMenuItem(uint32 QuestId, uint8 Icon);
+        void AddMenuItem( uint32 QuestId, uint8 Icon);
         void ClearMenu();
 
         uint8 MenuItemCount() const
@@ -232,9 +232,9 @@ class QuestMenu
             return m_qItems.empty();
         }
 
-        bool HasItem(uint32 questid);
+        bool HasItem( uint32 questid );
 
-        QuestMenuItem const& GetItem(uint16 Id)
+        QuestMenuItem const& GetItem( uint16 Id )
         {
             return m_qItems[ Id ];
         }
@@ -250,7 +250,7 @@ class MANGOS_DLL_SPEC PlayerMenu
         QuestMenu  mQuestMenu;
 
     public:
-        explicit PlayerMenu(WorldSession* Session);
+        explicit PlayerMenu(WorldSession *Session);
         ~PlayerMenu();
 
         GossipMenu& GetGossipMenu() { return mGossipMenu; }
@@ -261,16 +261,16 @@ class MANGOS_DLL_SPEC PlayerMenu
         bool Empty() const { return mGossipMenu.Empty() && mQuestMenu.Empty(); }
 
         void ClearMenus();
-        uint32 GossipOptionSender(unsigned int Selection);
-        uint32 GossipOptionAction(unsigned int Selection);
-        bool GossipOptionCoded(unsigned int Selection);
+        uint32 GossipOptionSender( unsigned int Selection );
+        uint32 GossipOptionAction( unsigned int Selection );
+        bool GossipOptionCoded( unsigned int Selection );
 
         void SendGossipMenu(uint32 titleTextId, ObjectGuid objectGuid);
         void CloseGossip();
-        void SendPointOfInterest(float X, float Y, uint32 Icon, uint32 Flags, uint32 Data, const char* locName);
-        void SendPointOfInterest(uint32 poi_id);
-        void SendTalking(uint32 textID);
-        void SendTalking(char const* title, char const* text);
+        void SendPointOfInterest( float X, float Y, uint32 Icon, uint32 Flags, uint32 Data, const char * locName );
+        void SendPointOfInterest( uint32 poi_id );
+        void SendTalking( uint32 textID );
+        void SendTalking( char const * title, char const * text );
 
         /*********************************************************/
         /***                    QUEST SYSTEM                   ***/
@@ -279,10 +279,10 @@ class MANGOS_DLL_SPEC PlayerMenu
 
         void SendQuestGiverQuestList(QEmote eEmote, const std::string& Title, ObjectGuid npcGUID);
 
-        void SendQuestQueryResponse(Quest const* pQuest);
-        void SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid npcGUID, bool ActivateAccept);
+        void SendQuestQueryResponse(Quest const *pQuest);
+        void SendQuestGiverQuestDetails(Quest const *pQuest, ObjectGuid npcGUID, bool ActivateAccept);
 
         void SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGUID, bool EnbleNext);
-        void SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcGUID, bool Completable, bool CloseOnCancel);
+        void SendQuestGiverRequestItems(Quest const *pQuest, ObjectGuid npcGUID, bool Completable, bool CloseOnCancel);
 };
 #endif

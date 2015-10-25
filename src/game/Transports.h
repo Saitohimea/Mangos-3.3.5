@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,9 @@ class Transport : public GameObject
         bool AddPassenger(Player* passenger);
         bool RemovePassenger(Player* passenger);
 
+        void BuildStartMovePacket(Map const *targetMap);
+        void BuildStopMovePacket(Map const *targetMap);
+
         typedef std::set<Player*> PlayerSet;
         PlayerSet const& GetPassengers() const { return m_passengers; }
 
@@ -45,7 +48,7 @@ class Transport : public GameObject
             WayPoint() : mapid(0), x(0), y(0), z(0), teleport(false) {}
             WayPoint(uint32 _mapid, float _x, float _y, float _z, bool _teleport, uint32 _arrivalEventID = 0, uint32 _departureEventID = 0)
                 : mapid(_mapid), x(_x), y(_y), z(_z), teleport(_teleport),
-                  arrivalEventID(_arrivalEventID), departureEventID(_departureEventID)
+                arrivalEventID(_arrivalEventID), departureEventID(_departureEventID)
             {
             }
 

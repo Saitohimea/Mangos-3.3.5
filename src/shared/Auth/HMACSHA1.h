@@ -1,5 +1,5 @@
 /*
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,14 +30,14 @@ class BigNumber;
 class HMACSHA1
 {
     public:
-        HMACSHA1(uint32 len, uint8* seed);
+        HMACSHA1(uint32 len, uint8 *seed);
         ~HMACSHA1();
-        void UpdateBigNumber(BigNumber* bn);
-        void UpdateData(const uint8* data, int length);
-        void UpdateData(const std::string& str);
+        void UpdateBigNumber(BigNumber *bn);
+        void UpdateData(const uint8 *data, int length);
+        void UpdateData(const std::string &str);
         void Finalize();
-        uint8* ComputeHash(BigNumber* bn);
-        uint8* GetDigest() { return (uint8*)m_digest; }
+        uint8 *ComputeHash(BigNumber *bn);
+        uint8 *GetDigest() { return (uint8*)m_digest; }
         int GetLength() { return SHA_DIGEST_LENGTH; }
     private:
         HMAC_CTX m_ctx;

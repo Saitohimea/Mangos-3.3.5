@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,26 +26,26 @@
 #define REACTOR_VISIBLE_RANGE (26.46f)
 
 int
-ReactorAI::Permissible(const Creature* creature)
+ReactorAI::Permissible(const Creature *creature)
 {
-    if (creature->IsCivilian() || creature->IsNeutralToAll())
+    if( creature->IsCivilian() || creature->IsNeutralToAll() )
         return PERMIT_BASE_REACTIVE;
 
     return PERMIT_BASE_NO;
 }
 
 void
-ReactorAI::MoveInLineOfSight(Unit*)
+ReactorAI::MoveInLineOfSight(Unit *)
 {
 }
 
 void
-ReactorAI::AttackStart(Unit* p)
+ReactorAI::AttackStart(Unit *p)
 {
-    if (!p)
+    if(!p)
         return;
 
-    if (m_creature->Attack(p, true))
+    if(m_creature->Attack(p,true))
     {
         DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "Tag unit GUID: %u (TypeId: %u) as a victim", p->GetGUIDLow(), p->GetTypeId());
         i_victimGuid = p->GetObjectGuid();
@@ -54,12 +54,12 @@ ReactorAI::AttackStart(Unit* p)
         m_creature->SetInCombatWith(p);
         p->SetInCombatWith(m_creature);
 
-        HandleMovementOnAttackStart(p);
+        m_creature->GetMotionMaster()->MoveChase(p);
     }
 }
 
 bool
-ReactorAI::IsVisible(Unit*) const
+ReactorAI::IsVisible(Unit *) const
 {
     return false;
 }
@@ -82,7 +82,6 @@ ReactorAI::EnterEvadeMode()
     if (!m_creature->isAlive())
     {
         DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "Creature stopped attacking, he is dead [guid=%u]", m_creature->GetGUIDLow());
-        m_creature->GetMotionMaster()->MovementExpired();
         m_creature->GetMotionMaster()->MoveIdle();
         i_victimGuid.Clear();
         m_creature->CombatStop(true);
@@ -109,7 +108,8 @@ ReactorAI::EnterEvadeMode()
         DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "Creature stopped attacking, victim %s [guid=%u]", victim->isAlive() ? "out run him" : "is dead", m_creature->GetGUIDLow());
     }
 
-    m_creature->RemoveAllAurasOnEvade();
+    m_creature->ExitVehicle();
+    m_creature->RemoveAllAuras();
     m_creature->DeleteThreatList();
     i_victimGuid.Clear();
     m_creature->CombatStop(true);

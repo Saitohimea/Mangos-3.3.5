@@ -1,10 +1,10 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -13,10 +13,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 #include "Config/Config.h"
@@ -40,13 +37,13 @@ void daemonSignal(int s)
         exit(EXIT_SUCCESS);
     }
 
-    if (sid)
-    {
+    if (sid) {
         kill(sid, s);
     }
 
     exit(EXIT_FAILURE);
 }
+
 
 void startDaemon(uint32_t timeout)
 {
@@ -60,13 +57,11 @@ void startDaemon(uint32_t timeout)
 
     sid = pid = fork();
 
-    if (pid < 0)
-    {
-        exit(EXIT_FAILURE);
+    if (pid < 0) {
+      exit(EXIT_FAILURE);
     }
 
-    if (pid > 0)
-    {
+    if (pid > 0) {
         alarm(timeout);
         pause();
         exit(EXIT_FAILURE);
@@ -76,14 +71,12 @@ void startDaemon(uint32_t timeout)
 
     sid = setsid();
 
-    if (sid < 0)
-    {
-        exit(EXIT_FAILURE);
+    if (sid < 0) {
+      exit(EXIT_FAILURE);
     }
 
-    if ((chdir("/")) < 0)
-    {
-        exit(EXIT_FAILURE);
+    if ((chdir("/")) < 0) {
+      exit(EXIT_FAILURE);
     }
 
     freopen("/dev/null", "rt", stdin);
@@ -94,7 +87,7 @@ void startDaemon(uint32_t timeout)
 void stopDaemon()
 {
     std::string pidfile = sConfig.GetStringDefault("PidFile", "");
-    if (!pidfile.empty())
+    if(!pidfile.empty())
     {
         std::fstream pf(pidfile.c_str(), std::ios::in);
         uint32_t pid = 0;
@@ -122,6 +115,7 @@ void detachDaemon()
     }
 }
 
+
 void exitDaemon()
 {
     if (parent_pid && parent_pid != getpid())
@@ -129,6 +123,7 @@ void exitDaemon()
         kill(parent_pid, SIGTERM);
     }
 }
+
 
 struct WatchDog
 {

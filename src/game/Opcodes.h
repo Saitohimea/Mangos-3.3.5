@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -470,7 +470,7 @@ enum Opcodes
     SMSG_TRAINER_LIST                               = 0x1B1,
     CMSG_TRAINER_BUY_SPELL                          = 0x1B2,
     SMSG_TRAINER_BUY_SUCCEEDED                      = 0x1B3,
-    SMSG_TRAINER_BUY_FAILED                         = 0x1B4,// uint64, uint32, uint32 (0...2)
+    SMSG_TRAINER_BUY_FAILED                         = 0x1B4,
     CMSG_BINDER_ACTIVATE                            = 0x1B5,
     SMSG_PLAYERBINDERROR                            = 0x1B6,
     CMSG_BANKER_ACTIVATE                            = 0x1B7,
@@ -1091,7 +1091,7 @@ enum Opcodes
     SMSG_SEND_UNLEARN_SPELLS                        = 0x41E,
     SMSG_PROPOSE_LEVEL_GRANT                        = 0x41F,
     CMSG_ACCEPT_LEVEL_GRANT                         = 0x420,
-    SMSG_REFER_A_FRIEND_FAILURE                     = 0x421,
+    SMSG_REFER_A_FRIEND_ERROR                       = 0x421,
     SMSG_SPLINE_MOVE_SET_FLYING                     = 0x422,
     SMSG_SPLINE_MOVE_UNSET_FLYING                   = 0x423,
     SMSG_SUMMON_CANCEL                              = 0x424,
@@ -1341,10 +1341,10 @@ enum Opcodes
     MSG_MOVE_SET_COLLISION_HGT                      = 0x518,
     CMSG_CLEAR_RANDOM_BG_WIN_TIME                   = 0x519,
     CMSG_CLEAR_HOLIDAY_BG_WIN_TIME                  = 0x51A,
-    CMSG_COMMENTATOR_SKIRMISH_QUEUE_COMMAND         = 0x51B,// lua: CommentatorSetSkirmishMatchmakingMode/CommentatorRequestSkirmishQueueData/CommentatorRequestSkirmishMode/CommentatorStartSkirmishMatch
-    SMSG_COMMENTATOR_SKIRMISH_QUEUE_RESULT1         = 0x51C,// event EVENT_COMMENTATOR_SKIRMISH_QUEUE_REQUEST, CGCommentator::QueueNode
-    SMSG_COMMENTATOR_SKIRMISH_QUEUE_RESULT2         = 0x51D,// event EVENT_COMMENTATOR_SKIRMISH_QUEUE_REQUEST
-    SMSG_COMPRESSED_UNKNOWN_1310                    = 0x51E,// some compressed packet
+    CMSG_COMMENTATOR_SKIRMISH_QUEUE_COMMAND         = 0x51B, // lua: CommentatorSetSkirmishMatchmakingMode/CommentatorRequestSkirmishQueueData/CommentatorRequestSkirmishMode/CommentatorStartSkirmishMatch
+    SMSG_COMMENTATOR_SKIRMISH_QUEUE_RESULT1         = 0x51C, // event EVENT_COMMENTATOR_SKIRMISH_QUEUE_REQUEST, CGCommentator::QueueNode
+    SMSG_COMMENTATOR_SKIRMISH_QUEUE_RESULT2         = 0x51D, // event EVENT_COMMENTATOR_SKIRMISH_QUEUE_REQUEST
+    SMSG_COMPRESSED_UNKNOWN_1310                    = 0x51E, // some compressed packet
     NUM_MSG_TYPES                                   = 0x51F
 };
 
@@ -1352,8 +1352,8 @@ enum Opcodes
 enum SessionStatus
 {
     STATUS_AUTHED = 0,                                      ///< Player authenticated (_player==NULL, m_playerRecentlyLogout = false or will be reset before handler call, m_GUID have garbage)
-    STATUS_LOGGEDIN,                                        ///< Player in game (_player!=NULL, m_GUID == _player->GetGUID(), inWorld())
-    STATUS_TRANSFER,                                        ///< Player transferring to another map (_player!=NULL, m_GUID == _player->GetGUID(), !inWorld())
+    STATUS_LOGGEDIN,                                        ///< Player in game (_player!=NULL, m_GUID == _player->GetObjectGuid(), inWorld())
+    STATUS_TRANSFER,                                        ///< Player transferring to another map (_player!=NULL, m_GUID == _player->GetObjectGuid(), !inWorld())
     STATUS_LOGGEDIN_OR_RECENTLY_LOGGEDOUT,                  ///< _player!= NULL or _player==NULL && m_playerRecentlyLogout, m_GUID store last _player guid)
     STATUS_NEVER,                                           ///< Opcode not accepted from client (deprecated or server side only)
     STATUS_UNHANDLED                                        ///< We don' handle this opcode yet
@@ -1361,9 +1361,9 @@ enum SessionStatus
 
 enum PacketProcessing
 {
-    PROCESS_INPLACE = 0,                                    // process packet whenever we receive it - mostly for non-handled or non-implemented packets
-    PROCESS_THREADUNSAFE,                                   // packet is not thread-safe - process it in World::UpdateSessions()
-    PROCESS_THREADSAFE                                      // packet is thread-safe - process it in Map::Update()
+    PROCESS_INPLACE = 0,                                    //process packet whenever we receive it - mostly for non-handled or non-implemented packets
+    PROCESS_THREADUNSAFE,                                   //packet is not thread-safe - process it in World::UpdateSessions()
+    PROCESS_THREADSAFE                                      //packet is thread-safe - process it in Map::Update()
 };
 
 class WorldPacket;

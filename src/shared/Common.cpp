@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,24 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #include "Common.h"
 
-char const* localeNames[MAX_LOCALE] =
-{
-    "enUS",                                                 // also enGB
-    "koKR",
-    "frFR",
-    "deDE",
-    "zhCN",
-    "zhTW",
-    "esES",
-    "esMX",
-    "ruRU"
+char const* localeNames[MAX_LOCALE] = {
+  "enUS",                                                   // also enGB
+  "koKR",
+  "frFR",
+  "deDE",
+  "zhCN",
+  "zhTW",
+  "esES",
+  "esMX",
+  "ruRU"
 };
 
 // used for search by name or iterate all names
@@ -52,9 +48,9 @@ LocaleNameStr const fullLocaleNameList[] =
 
 LocaleConstant GetLocaleByName(const std::string& name)
 {
-    for (LocaleNameStr const* itr = &fullLocaleNameList[0]; itr->name; ++itr)
-        if (name == itr->name)
-            { return itr->locale; }
+    for(LocaleNameStr const* itr = &fullLocaleNameList[0]; itr->name; ++itr)
+        if (name==itr->name)
+            return itr->locale;
 
     return LOCALE_enUS;                                     // including enGB case
 }

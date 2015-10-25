@@ -1,4 +1,4 @@
-# This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+# Copyright (C) 2005-2012 MaNGOS project <http://getmangos.com/>
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -8,9 +8,10 @@
 # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-cmake_minimum_required (VERSION 2.8)
-
+cmake_minimum_required (VERSION 2.6)
 project (MANGOS_VMAP_ASSEMB_IO)
+
+set(CMAKE_VERBOSE_MAKEFILE true)
 
 # uncomment next line to disable debug mode
 ADD_DEFINITIONS("-DIOMAP_DEBUG")
@@ -27,21 +28,17 @@ include_directories(../../dep/ACE_wrappers/)
 include_directories(../../objdir/dep/ACE_wrappers)
 include_directories(../../src/framework/)
 
-add_library(g3dlite
-	../../dep/src/g3dlite/AABox.cpp
+add_library(g3dlite ../../dep/src/g3dlite/AABox.cpp
 	../../dep/src/g3dlite/Box.cpp
 	../../dep/src/g3dlite/Crypto.cpp
 	../../dep/src/g3dlite/format.cpp
 	../../dep/src/g3dlite/Matrix3.cpp
-	../../dep/src/g3dlite/PhysicsFrame.cpp
 	../../dep/src/g3dlite/Plane.cpp
 	../../dep/src/g3dlite/System.cpp
 	../../dep/src/g3dlite/Triangle.cpp
-	../../dep/src/g3dlite/uint128.cpp
 	../../dep/src/g3dlite/Vector3.cpp
 	../../dep/src/g3dlite/Vector4.cpp
 	../../dep/src/g3dlite/debugAssert.cpp
-	../../dep/src/g3dlite/FileSystem.cpp
 	../../dep/src/g3dlite/fileutils.cpp
 	../../dep/src/g3dlite/g3dmath.cpp
 	../../dep/src/g3dlite/g3dfnmatch.cpp
@@ -87,3 +84,4 @@ target_link_libraries(vmap_assembler vmap)
 
 # add_executable(vmap_test coordinate_test.cpp)
 # target_link_libraries(vmap_test vmap)
+

@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,12 +77,6 @@ enum ItemSpelltriggerType
     ITEM_SPELLTRIGGER_ON_EQUIP        = 1,
     ITEM_SPELLTRIGGER_CHANCE_ON_HIT   = 2,
     ITEM_SPELLTRIGGER_SOULSTONE       = 4,
-    /*
-     * ItemSpelltriggerType 5 might have changed on 2.4.3/3.0.3: Such auras
-     * will be applied on item pickup and removed on item loss - maybe on the
-     * other hand the item is destroyed if the aura is removed ("removed on
-     * death" of spell 57348 makes me think so)
-     */
     ITEM_SPELLTRIGGER_ON_STORE        = 5,                  // casted at add item to inventory/equip, applied aura removed at remove item, item deleted at aura cancel/expire/etc
     ITEM_SPELLTRIGGER_LEARN_SPELL_ID  = 6                   // used in item_template.spell_2 with spell_id with SPELL_GENERIC_LEARN in spell_1
 };
@@ -483,7 +477,7 @@ const uint32 MaxItemSubclassValues[MAX_ITEM_CLASS] =
 
 inline uint8 ItemSubClassToDurabilityMultiplierId(uint32 ItemClass, uint32 ItemSubClass)
 {
-    switch (ItemClass)
+    switch(ItemClass)
     {
         case ITEM_CLASS_WEAPON: return ItemSubClass;
         case ITEM_CLASS_ARMOR:  return ItemSubClass + 21;
@@ -608,7 +602,7 @@ struct ItemPrototype
     uint32 GemProperties;                                   // id from GemProperties.dbc
     int32 RequiredDisenchantSkill;
     float  ArmorDamageModifier;
-    uint32 Duration;
+    uint32 Duration;                                        // negative = realtime, positive = ingame time
     uint32 ItemLimitCategory;                               // id from ItemLimitCategory.dbc
     uint32 HolidayId;                                       // id from Holidays.dbc
     uint32 ScriptId;
@@ -621,7 +615,7 @@ struct ItemPrototype
     // helpers
     bool CanChangeEquipStateInCombat() const
     {
-        switch (InventoryType)
+        switch(InventoryType)
         {
             case INVTYPE_RELIC:
             case INVTYPE_SHIELD:
@@ -629,7 +623,7 @@ struct ItemPrototype
                 return true;
         }
 
-        switch (Class)
+        switch(Class)
         {
             case ITEM_CLASS_WEAPON:
             case ITEM_CLASS_PROJECTILE:
@@ -639,7 +633,7 @@ struct ItemPrototype
         return false;
     }
 
-    uint32 GetMaxStackSize() const { return Stackable > 0 ? uint32(Stackable) : uint32(0x7FFFFFFF - 1); }
+    uint32 GetMaxStackSize() const { return Stackable > 0 ? uint32(Stackable) : uint32(0x7FFFFFFF-1); }
 
     float getDPS() const
     {
@@ -647,16 +641,16 @@ struct ItemPrototype
             return 0;
         float temp = 0;
         for (int i = 0; i < MAX_ITEM_PROTO_DAMAGES; ++i)
-            temp += Damage[i].DamageMin + Damage[i].DamageMax;
-        return temp * 500 / Delay;
+            temp+=Damage[i].DamageMin + Damage[i].DamageMax;
+        return temp*500/Delay;
     }
 
     int32 getFeralBonus(int32 extraDPS = 0) const
     {
         // 0x02A5F3 - is mask for Melee weapon from ItemSubClassMask.dbc
-        if (Class == ITEM_CLASS_WEAPON && (1 << SubClass) & 0x02A5F3)
+        if (Class == ITEM_CLASS_WEAPON && (1<<SubClass)&0x02A5F3)
         {
-            int32 bonus = int32((extraDPS + getDPS()) * 14.0f) - 767;
+            int32 bonus = int32((extraDPS + getDPS())*14.0f) - 767;
             if (bonus < 0)
                 return 0;
             return bonus;
@@ -664,8 +658,9 @@ struct ItemPrototype
         return 0;
     }
 
-    bool IsPotion() const { return Class == ITEM_CLASS_CONSUMABLE && SubClass == ITEM_SUBCLASS_POTION; }
+    bool IsPotion() const { return Class==ITEM_CLASS_CONSUMABLE && SubClass==ITEM_SUBCLASS_POTION; }
     bool IsConjuredConsumable() const { return Class == ITEM_CLASS_CONSUMABLE && (Flags & ITEM_FLAG_CONJURED); }
+
     bool IsVellum() const
     {
         return (Class == ITEM_CLASS_TRADE_GOODS && (1 << SubClass) & (1 << ITEM_SUBCLASS_ARMOR_ENCHANTMENT | 1 << ITEM_SUBCLASS_WEAPON_ENCHANTMENT));

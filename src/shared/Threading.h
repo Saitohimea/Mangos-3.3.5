@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2009-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #ifndef THREADING_H
@@ -24,51 +21,27 @@
 
 #include <ace/Thread.h>
 #include <ace/TSS_T.h>
-#include <ace/Atomic_Op.h>
+#include "ace/Atomic_Op.h"
 #include <assert.h>
 
 namespace ACE_Based
 {
-    /**
-     * @brief
-     *
-     */
     class Runnable
     {
         public:
-            /**
-             * @brief
-             *
-             */
             virtual ~Runnable() {}
-            /**
-             * @brief
-             *
-             */
             virtual void run() = 0;
 
-            /**
-             * @brief
-             *
-             */
             void incReference() { ++m_refs; }
-            /**
-             * @brief
-             *
-             */
             void decReference()
             {
-                if (!--m_refs)
-                    { delete this; }
+                if(!--m_refs)
+                    delete this;
             }
         private:
-            ACE_Atomic_Op<ACE_Thread_Mutex, long> m_refs; /**< TODO */
+            ACE_Atomic_Op<ACE_Thread_Mutex, long> m_refs;
     };
 
-    /**
-     * @brief
-     *
-     */
     enum Priority
     {
         Idle,
@@ -77,154 +50,57 @@ namespace ACE_Based
         Normal,
         High,
         Highest,
-        Realtime
+        Realtime,
     };
 
 #define MAXPRIORITYNUM (Realtime + 1)
 
-    /**
-     * @brief
-     *
-     */
     class ThreadPriority
     {
         public:
-            /**
-             * @brief
-             *
-             */
             ThreadPriority();
-            /**
-             * @brief
-             *
-             * @param p
-             * @return int
-             */
             int getPriority(Priority p) const;
 
         private:
-            int m_priority[MAXPRIORITYNUM]; /**< TODO */
+            int m_priority[MAXPRIORITYNUM];
     };
 
-    /**
-     * @brief
-     *
-     */
     class Thread
     {
         public:
-            /**
-             * @brief
-             *
-             */
             Thread();
-            /**
-             * @brief
-             *
-             * @param instance
-             */
             explicit Thread(Runnable* instance);
-            /**
-             * @brief
-             *
-             */
             ~Thread();
 
-            /**
-             * @brief
-             *
-             * @return bool
-             */
             bool start();
-            /**
-             * @brief
-             *
-             * @return bool
-             */
             bool wait();
-            /**
-             * @brief
-             *
-             */
             void destroy();
 
-            /**
-             * @brief
-             *
-             */
             void suspend();
-            /**
-             * @brief
-             *
-             */
             void resume();
 
-            /**
-             * @brief
-             *
-             * @param type
-             */
             void setPriority(Priority type);
 
-            /**
-             * @brief
-             *
-             * @param msecs
-             */
             static void Sleep(unsigned long msecs);
-            /**
-             * @brief
-             *
-             * @return ACE_thread_t
-             */
             static ACE_thread_t currentId();
-            /**
-             * @brief
-             *
-             * @return ACE_hthread_t
-             */
             static ACE_hthread_t currentHandle();
-            /**
-             * @brief
-             *
-             * @return Thread
-             */
-            static Thread* current();
+            static Thread * current();
 
         private:
-            /**
-             * @brief
-             *
-             * @param
-             */
             Thread(const Thread&);
-            /**
-             * @brief
-             *
-             * @param
-             * @return Thread &operator
-             */
             Thread& operator=(const Thread&);
 
-            /**
-             * @brief
-             *
-             * @param param
-             * @return ACE_THR_FUNC_RETURN
-             */
-            static ACE_THR_FUNC_RETURN ThreadTask(void* param);
+            static ACE_THR_FUNC_RETURN ThreadTask(void * param);
 
-            ACE_thread_t m_iThreadId; /**< TODO */
-            ACE_hthread_t m_hThreadHandle; /**< TODO */
-            Runnable* m_task; /**< TODO */
+            ACE_thread_t m_iThreadId;
+            ACE_hthread_t m_hThreadHandle;
+            Runnable * m_task;
 
-            /**
-             * @brief
-             *
-             */
             typedef ACE_TSS<Thread> ThreadStorage;
-            static ThreadStorage m_ThreadStorage; /**< global object - container for Thread class representation of every thread */
-            static ThreadPriority m_TpEnum; /**< use this object to determine current OS thread priority values mapped to enum Priority{} */
+            //global object - container for Thread class representation of every thread
+            static ThreadStorage m_ThreadStorage;
+            //use this object to determine current OS thread priority values mapped to enum Priority{}
+            static ThreadPriority m_TpEnum;
     };
 }
 #endif

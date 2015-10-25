@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include "ace/Recursive_Thread_Mutex.h"
 #include "Map.h"
 #include "GridStates.h"
+#include "MapUpdater.h"
 
 class Transport;
 class BattleGround;
@@ -39,10 +40,20 @@ struct MANGOS_DLL_DECL MapID
         if (nMapId == val.nMapId)
             return nInstanceId < val.nInstanceId;
 
+        if (IsContinent() && !val.IsContinent())
+            return true;
+        else if (!IsContinent() && val.IsContinent())
+            return false;
+
         return nMapId < val.nMapId;
     }
 
     bool operator==(const MapID& val) const { return nMapId == val.nMapId && nInstanceId == val.nInstanceId; }
+
+    bool IsContinent() const
+    {
+        return nMapId == 0 || nMapId == 1 || nMapId == 530 || nMapId == 571;
+    };
 
     uint32 nMapId;
     uint32 nInstanceId;
@@ -50,11 +61,11 @@ struct MANGOS_DLL_DECL MapID
 
 class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex> >
 {
-        friend class MaNGOS::OperatorNew<MapManager>;
+    friend class MaNGOS::OperatorNew<MapManager>;
 
-        typedef ACE_Recursive_Thread_Mutex LOCK_TYPE;
-        typedef ACE_Guard<LOCK_TYPE> LOCK_TYPE_GUARD;
-        typedef MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex>::Lock Guard;
+    typedef ACE_Recursive_Thread_Mutex LOCK_TYPE;
+    typedef ACE_Guard<LOCK_TYPE> LOCK_TYPE_GUARD;
+    typedef MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex>::Lock Guard;
 
     public:
         typedef std::map<MapID, Map* > MapMapType;
@@ -63,7 +74,7 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
         Map* CreateBgMap(uint32 mapid, BattleGround* bg);
         Map* FindMap(uint32 mapid, uint32 instanceId = 0) const;
 
-        void UpdateGridState(grid_state_t state, Map& map, NGridType& ngrid, GridInfo& ginfo, const uint32& x, const uint32& y, const uint32& t_diff);
+        void UpdateGridState(grid_state_t state, Map& map, NGridType& ngrid, GridInfo& ginfo, const uint32 &x, const uint32 &y, const uint32 &t_diff);
 
         // only const version for outer users
         void DeleteInstance(uint32 mapid, uint32 instanceId);
@@ -73,7 +84,7 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
 
         void SetGridCleanUpDelay(uint32 t)
         {
-            if (t < MIN_GRID_DELAY)
+            if( t < MIN_GRID_DELAY )
                 i_gridCleanUpDelay = MIN_GRID_DELAY;
             else
                 i_gridCleanUpDelay = t;
@@ -81,37 +92,37 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
 
         void SetMapUpdateInterval(uint32 t)
         {
-            if (t > MIN_MAP_UPDATE_DELAY)
+            if( t > MIN_MAP_UPDATE_DELAY )
                 t = MIN_MAP_UPDATE_DELAY;
 
             i_timer.SetInterval(t);
             i_timer.Reset();
         }
 
-        // void LoadGrid(int mapid, int instId, float x, float y, const WorldObject* obj, bool no_unload = false);
+        //void LoadGrid(int mapid, int instId, float x, float y, const WorldObject* obj, bool no_unload = false);
         void UnloadAll();
 
         static bool ExistMapAndVMap(uint32 mapid, float x, float y);
         static bool IsValidMAP(uint32 mapid);
 
-        static bool IsValidMapCoord(uint32 mapid, float x, float y)
+        static bool IsValidMapCoord(uint32 mapid, float x,float y)
         {
-            return IsValidMAP(mapid) && MaNGOS::IsValidMapCoord(x, y);
+            return IsValidMAP(mapid) && MaNGOS::IsValidMapCoord(x,y);
         }
 
-        static bool IsValidMapCoord(uint32 mapid, float x, float y, float z)
+        static bool IsValidMapCoord(uint32 mapid, float x,float y,float z)
         {
-            return IsValidMAP(mapid) && MaNGOS::IsValidMapCoord(x, y, z);
+            return IsValidMAP(mapid) && MaNGOS::IsValidMapCoord(x,y,z);
         }
 
-        static bool IsValidMapCoord(uint32 mapid, float x, float y, float z, float o)
+        static bool IsValidMapCoord(uint32 mapid, float x,float y,float z,float o)
         {
-            return IsValidMAP(mapid) && MaNGOS::IsValidMapCoord(x, y, z, o);
+            return IsValidMAP(mapid) && MaNGOS::IsValidMapCoord(x,y,z,o);
         }
 
         static bool IsValidMapCoord(WorldLocation const& loc)
         {
-            return IsValidMapCoord(loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z, loc.orientation);
+            return IsValidMapCoord(loc.mapid,loc.coord_x,loc.coord_y,loc.coord_z,loc.orientation);
         }
 
         // modulos a radian orientation to the range of 0..2PI
@@ -121,36 +132,47 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
             // to emulate negative numbers
             if (o < 0)
             {
-                float mod = o * -1;
-                mod = fmod(mod, 2.0f * M_PI_F);
-                mod = -mod + 2.0f * M_PI_F;
+                float mod = o *-1;
+                mod = fmod(mod, 2.0f*M_PI_F);
+                mod = -mod+2.0f*M_PI_F;
                 return mod;
             }
-            return fmod(o, 2.0f * M_PI_F);
+            return fmod(o, 2.0f*M_PI_F);
         }
 
         void RemoveAllObjectsInRemoveList();
 
         void LoadTransports();
 
-        typedef std::set<Transport*> TransportSet;
+        typedef std::set<Transport *> TransportSet;
         TransportSet m_Transports;
 
         typedef std::map<uint32, TransportSet> TransportMap;
         TransportMap m_TransportsByMap;
 
+        bool CanPlayerEnter(uint32 mapid, Player* player);
         void InitializeVisibilityDistanceInfo();
 
         /* statistics */
         uint32 GetNumInstances();
         uint32 GetNumPlayersInInstances();
 
+        /* transport GO/map identification*/
+        typedef std::map<uint32/*map_id*/, Transport*> TransportGOMap;
+        TransportGOMap m_mapOnTransportGO;
 
-        // get list of all maps
+        bool IsTransportMap(uint32 mapid);
+        Transport* GetTransportByGOMapId(uint32 mapid);
+
+        //get list of all maps
         const MapMapType& Maps() const { return i_maps; }
 
         template<typename Do>
         void DoForAllMapsWithMapId(uint32 mapId, Do& _do);
+
+        MapUpdater* GetMapUpdater() { return &m_updater; };
+
+        void UpdateLoadBalancer(bool b_start);
 
     private:
 
@@ -163,28 +185,39 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
         MapManager();
         ~MapManager();
 
-        MapManager(const MapManager&);
-        MapManager& operator=(const MapManager&);
+        MapManager(const MapManager &);
+        MapManager& operator=(const MapManager &);
 
         void InitStateMachine();
         void DeleteStateMachine();
 
-        Map* CreateInstance(uint32 id, Player* player);
-        DungeonMap* CreateDungeonMap(uint32 id, uint32 InstanceId, Difficulty difficulty, DungeonPersistentState* save = NULL);
+        Map* CreateInstance(uint32 id, Player * player);
+        DungeonMap* CreateDungeonMap(uint32 id, uint32 InstanceId, Difficulty difficulty, DungeonPersistentState *save = NULL);
         BattleGroundMap* CreateBattleGroundMap(uint32 id, uint32 InstanceId, BattleGround* bg);
 
         uint32 i_gridCleanUpDelay;
         MapMapType i_maps;
+
+        MapUpdater m_updater;
+        ShortIntervalTimer i_balanceTimer;
+        int32  m_threadsCount;
+        int32  m_threadsCountPreferred;
+        uint32 m_previewTimeStamp;
+        uint64 m_workTimeStorage;
+        uint64 m_sleepTimeStorage;
+        uint32 m_tickCount;
+
         IntervalTimer i_timer;
 };
 
 template<typename Do>
 inline void MapManager::DoForAllMapsWithMapId(uint32 mapId, Do& _do)
 {
-    MapMapType::const_iterator start = i_maps.lower_bound(MapID(mapId, 0));
-    MapMapType::const_iterator end   = i_maps.lower_bound(MapID(mapId + 1, 0));
-    for (MapMapType::const_iterator itr = start; itr != end; ++itr)
-        _do(itr->second);
+    for(MapMapType::const_iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)
+    {
+        if (itr->first.nMapId == mapId)
+            _do(itr->second);
+    }
 }
 
 #define sMapMgr MapManager::Instance()

@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +19,16 @@
 #include "Config.h"
 #include "ace/Configuration_Import_Export.h"
 
-#include "Policies/Singleton.h"
+#include "Policies/SingletonImp.h"
 
 INSTANTIATE_SINGLETON_1(Config);
 
-static bool GetValueHelper(ACE_Configuration_Heap* mConf, const char* name, ACE_TString& result)
+static bool GetValueHelper(ACE_Configuration_Heap *mConf, const char *name, ACE_TString &result)
 {
     if (!mConf)
         return false;
+
+    ACE_GUARD_RETURN(ACE_Thread_Mutex, guard, sConfig.mMtx, false);
 
     ACE_TString section_name;
     ACE_Configuration_Section_Key section_key;
@@ -45,7 +47,7 @@ static bool GetValueHelper(ACE_Configuration_Heap* mConf, const char* name, ACE_
 }
 
 Config::Config()
-    : mConf(NULL)
+: mConf(NULL)
 {
 }
 
@@ -54,7 +56,7 @@ Config::~Config()
     delete mConf;
 }
 
-bool Config::SetSource(const char* file)
+bool Config::SetSource(const char *file)
 {
     mFilename = file;
 
@@ -92,18 +94,20 @@ bool Config::GetBoolDefault(const char* name, bool def)
 
     const char* str = val.c_str();
     if (strcmp(str, "true") == 0 || strcmp(str, "TRUE") == 0 ||
-            strcmp(str, "yes") == 0 || strcmp(str, "YES") == 0 ||
-            strcmp(str, "1") == 0)
+        strcmp(str, "yes") == 0 || strcmp(str, "YES") == 0 ||
+        strcmp(str, "1") == 0)
         return true;
     else
         return false;
 }
+
 
 int32 Config::GetIntDefault(const char* name, int32 def)
 {
     ACE_TString val;
     return GetValueHelper(mConf, name, val) ? atoi(val.c_str()) : def;
 }
+
 
 float Config::GetFloatDefault(const char* name, float def)
 {

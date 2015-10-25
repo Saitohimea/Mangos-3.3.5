@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #ifndef MANGOS_SINGLETON_H
@@ -35,124 +32,36 @@ namespace MaNGOS
     template
     <
     typename T,
-             class ThreadingModel = MaNGOS::SingleThreaded<T>,
-             class CreatePolicy = MaNGOS::OperatorNew<T>,
-             class LifeTimePolicy = MaNGOS::ObjectLifeTime<T>
-             >
-    /**
-     * @brief
-     *
-     */
+    class ThreadingModel = MaNGOS::SingleThreaded<T>,
+    class CreatePolicy = MaNGOS::OperatorNew<T>,
+    class LifeTimePolicy = MaNGOS::ObjectLifeTime<T>
+    >
     class MANGOS_DLL_DECL Singleton
     {
         public:
 
-            /**
-             * @brief
-             *
-             * @return T
-             */
             static T& Instance();
 
         protected:
 
-            /**
-             * @brief
-             *
-             */
             Singleton()
             {
             }
 
         private:
 
-            /**
-             * @brief Prohibited actions...this does not prevent hijacking.
-             *
-             * @param
-             */
+            // Prohibited actions...this does not prevent hijacking.
             Singleton(const Singleton&);
-            /**
-             * @brief
-             *
-             * @param
-             * @return Singleton &operator
-             */
             Singleton& operator=(const Singleton&);
 
-            /**
-             * @brief Singleton Helpers
-             *
-             */
+            // Singleton Helpers
             static void DestroySingleton();
 
-            /**
-             * @brief data structure
-             *
-             */
+            // data structure
             typedef typename ThreadingModel::Lock Guard;
-            static T* si_instance; /**< TODO */
-            static bool si_destroyed; /**< TODO */
+            static T *si_instance;
+            static bool si_destroyed;
     };
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-    T* Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_instance = NULL; /**< TODO */
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-    bool Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_destroyed = false; /**< TODO */
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-    /**
-     * @brief
-     *
-     * @return T &MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>
-     */
-    T& MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::Instance()
-    {
-        if (!si_instance)
-        {
-            // double-checked Locking pattern
-            Guard();
-
-            if (!si_instance)
-            {
-                if (si_destroyed)
-                {
-                    si_destroyed = false;
-                    LifeTimePolicy::OnDeadReference();
-                }
-
-                si_instance = CreatePolicy::Create();
-                LifeTimePolicy::ScheduleCall(&DestroySingleton);
-            }
-        }
-
-        return *si_instance;
-    }
-
-    template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-    /**
-     * @brief
-     *
-     */
-    void MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::DestroySingleton()
-    {
-        CreatePolicy::Destroy(si_instance);
-        si_instance = NULL;
-        si_destroyed = true;
-    }
 }
-
-#define INSTANTIATE_SINGLETON_1(TYPE) \
-    template class MANGOS_DLL_DECL MaNGOS::Singleton<TYPE, MaNGOS::SingleThreaded<TYPE>, MaNGOS::OperatorNew<TYPE>, MaNGOS::ObjectLifeTime<TYPE> >;
-
-#define INSTANTIATE_SINGLETON_2(TYPE, THREADINGMODEL) \
-    template class MANGOS_DLL_DECL MaNGOS::Singleton<TYPE, THREADINGMODEL, MaNGOS::OperatorNew<TYPE>, MaNGOS::ObjectLifeTime<TYPE> >;
-
-#define INSTANTIATE_SINGLETON_3(TYPE, THREADINGMODEL, CREATIONPOLICY ) \
-    template class MANGOS_DLL_DECL MaNGOS::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, MaNGOS::ObjectLifeTime<TYPE> >;
-
-#define INSTANTIATE_SINGLETON_4(TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME) \
-    template class MANGOS_DLL_DECL MaNGOS::Singleton<TYPE, THREADINGMODEL, CREATIONPOLICY, OBJECTLIFETIME >;
 
 #endif

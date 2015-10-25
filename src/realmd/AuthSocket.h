@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,17 +39,17 @@ class AuthSocket: public BufferedSocket
         AuthSocket();
         ~AuthSocket();
 
-        void OnAccept() override;
-        void OnRead() override;
+        void OnAccept();
+        void OnRead();
         void SendProof(Sha1Hash sha);
-        void LoadRealmlist(ByteBuffer& pkt, uint32 acctid);
+        void LoadRealmlist(ByteBuffer &pkt, uint32 acctid);
 
         bool _HandleLogonChallenge();
         bool _HandleLogonProof();
         bool _HandleReconnectChallenge();
         bool _HandleReconnectProof();
         bool _HandleRealmList();
-        // data transfer handle for patch
+        //data transfer handle for patch
 
         bool _HandleXferResume();
         bool _HandleXferCancel();
@@ -72,6 +72,7 @@ class AuthSocket: public BufferedSocket
         // Since GetLocaleByName() is _NOT_ bijective, we have to store the locale as a string. Otherwise we can't differ
         // between enUS and enGB, which is important for the patch system
         std::string _localizationName;
+        std::string _os;
         uint16 _build;
         AccountTypes _accountSecurityLevel;
 

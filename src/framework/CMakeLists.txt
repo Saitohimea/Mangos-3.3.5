@@ -1,4 +1,5 @@
-# This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+#
+# Copyright (C) 2005-2012 MaNGOS project <http://getmangos.com/>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,37 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 
-set(LIBRARY_NAME framework)
+# include(${CMAKE_SOURCE_DIR}/dep/tbb/tbbinclude.cmake)
 
-set(LIBRARY_SRCS
-    Dynamic/FactoryHolder.h
-    Dynamic/ObjectRegistry.h
-    GameSystem/Grid.h
-    GameSystem/GridLoader.h
-    GameSystem/GridReference.h
-    GameSystem/GridRefManager.h
-    GameSystem/NGrid.h
-    GameSystem/TypeContainer.h
-    GameSystem/TypeContainerFunctions.h
-    GameSystem/TypeContainerVisitor.h
-    Platform/CompilerDefs.h
-    Platform/Define.h
-    Policies/CreationPolicy.h
-    Policies/ObjectLifeTime.cpp
-    Policies/ObjectLifeTime.h
-    Policies/Singleton.h
-    Policies/ThreadingModel.h
-    Utilities/ByteConverter.h
-    Utilities/Callback.h
-    Utilities/EventProcessor.cpp
-    Utilities/EventProcessor.h
-    Utilities/LinkedList.h
-    Utilities/LinkedReference/Reference.h
-    Utilities/LinkedReference/RefManager.h
-    Utilities/TypeList.h
-    Utilities/UnorderedMapSet.h
-   )
+file(GLOB_RECURSE framework_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h)
 
 source_group("Other"
   REGULAR_EXPRESSION .*
@@ -78,17 +53,20 @@ include_directories(
   ${ACE_INCLUDE_DIR}
 )
 
-add_library(${LIBRARY_NAME} STATIC
-  ${LIBRARY_SRCS}
+add_library(framework STATIC
+  ${framework_SRCS}
 )
 
 if(NOT TBB_USE_EXTERNAL)
-  add_dependencies(${LIBRARY_NAME} TBB_Project)
+  add_dependencies(framework TBB_Project)
+# add_dependencies(framework tbb)
+# add_dependencies(framework tbbmalloc)
 endif()
 if(NOT ACE_USE_EXTERNAL)
-  add_dependencies(${LIBRARY_NAME} ACE_Project)
+  add_dependencies(framework ACE_Project)
+# add_dependencies(framework ace)
 endif()
 
-target_link_libraries(${LIBRARY_NAME}
+target_link_libraries(framework
   ${TBB_LIBRARIES}
 )

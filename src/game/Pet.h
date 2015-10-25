@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,17 +45,6 @@ enum PetSaveMode
     PET_SAVE_LAST_STABLE_SLOT  =  MAX_PET_STABLES,          // last in DB stable slot index (including), all higher have same meaning as PET_SAVE_NOT_IN_SLOT
     PET_SAVE_NOT_IN_SLOT       =  100,                      // for avoid conflict with stable size grow will use 100
     PET_SAVE_REAGENTS          =  101                       // PET_SAVE_NOT_IN_SLOT with reagents return
-};
-
-// There might be a lot more
-enum PetModeFlags
-{
-    PET_MODE_UNKNOWN_0         = 0x0000001,
-    PET_MODE_UNKNOWN_2         = 0x0000100,
-    PET_MODE_DISABLE_ACTIONS   = 0x8000000,
-
-    // autoset in client at summon
-    PET_MODE_DEFAULT           = PET_MODE_UNKNOWN_0 | PET_MODE_UNKNOWN_2,
 };
 
 enum HappinessState
@@ -121,8 +110,35 @@ enum PetNameInvalidReason
     PET_NAME_DECLENSION_DOESNT_MATCH_BASE_NAME              = 16
 };
 
+enum ScalingTarget
+{
+    SCALING_TARGET_ALL          = 0,
+    SCALING_TARGET_STAT,
+    SCALING_TARGET_RESISTANCE,
+    SCALING_TARGET_ATTACKPOWER,
+    SCALING_TARGET_DAMAGE,
+    SCALING_TARGET_SPELLDAMAGE,
+    SCALING_TARGET_HIT,
+    SCALING_TARGET_SPELLHIT,
+    SCALING_TARGET_EXPERTIZE,
+    SCALING_TARGET_POWERREGEN,
+    SCALING_TARGET_ATTACKSPEED,
+    SCALING_TARGET_MAX
+};
+
+struct ScalingAction
+{
+    explicit ScalingAction(ScalingTarget _target, uint32 _stat, bool _apply ) :
+                                         target(_target), stat(_stat), apply(_apply)
+    {}
+    ScalingTarget target;
+    uint32        stat;
+    bool          apply;
+};
+
 typedef UNORDERED_MAP<uint32, PetSpell> PetSpellMap;
 typedef std::vector<uint32> AutoSpellList;
+typedef std::map<uint8, uint32> PetNumberList;
 
 #define HAPPINESS_LEVEL_SIZE        333000
 
@@ -132,6 +148,7 @@ typedef std::vector<uint32> AutoSpellList;
 #define PET_FOLLOW_ANGLE (M_PI_F/2.0f)
 
 class Player;
+struct PetScalingData;
 
 class MANGOS_DLL_SPEC Pet : public Creature
 {
@@ -139,28 +156,28 @@ class MANGOS_DLL_SPEC Pet : public Creature
         explicit Pet(PetType type = MAX_PET_TYPE);
         virtual ~Pet();
 
-        void AddToWorld() override;
-        void RemoveFromWorld() override;
+        void AddToWorld();
+        void RemoveFromWorld();
 
         PetType getPetType() const { return m_petType; }
         void setPetType(PetType type) { m_petType = type; }
-        bool isControlled() const { return getPetType() == SUMMON_PET || getPetType() == HUNTER_PET; }
+        bool isControlled() const { return getPetType()==SUMMON_PET || getPetType()==HUNTER_PET; }
         bool isTemporarySummoned() const { return m_duration > 0; }
 
         bool IsPermanentPetFor(Player* owner);              // pet have tab in character windows and set UNIT_FIELD_PETNUMBER
 
-        bool Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* cinfo, uint32 pet_number);
-        bool CreateBaseAtCreature(Creature* creature);
-        bool LoadPetFromDB(Player* owner, uint32 petentry = 0, uint32 petnumber = 0, bool current = false);
+        bool Create (uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* cinfo, uint32 pet_number, Unit* owner);
+        bool CreateBaseAtCreature(Creature* creature, Unit* owner);
+        bool LoadPetFromDB( Player* owner,uint32 petentry = 0,uint32 petnumber = 0, bool current = false, CreatureCreatePos* pos = NULL );
         void SavePetToDB(PetSaveMode mode);
         void Unsummon(PetSaveMode mode, Unit* owner = NULL);
         static void DeleteFromDB(uint32 guidlow, bool separate_transaction = true);
 
-        void SetDeathState(DeathState s) override;          // overwrite virtual Creature::SetDeathState and Unit::SetDeathState
+        void SetDeathState(DeathState s);                   // overwrite virtual Creature::SetDeathState and Unit::SetDeathState
         void Update(uint32 update_diff, uint32 diff) override;  // overwrite virtual Creature::Update and Unit::Update
 
         uint8 GetPetAutoSpellSize() const { return m_autospells.size(); }
-        uint32 GetPetAutoSpellOnPos(uint8 pos) const override
+        uint32 GetPetAutoSpellOnPos(uint8 pos) const
         {
             if (pos >= m_autospells.size())
                 return 0;
@@ -168,18 +185,8 @@ class MANGOS_DLL_SPEC Pet : public Creature
                 return m_autospells[pos];
         }
 
-        bool CanSwim() const override
-        {
-            Unit const* owner = GetOwner();
-            if (owner)
-                return owner->GetTypeId() == TYPEID_PLAYER ? true : ((Creature const*)owner)->CanSwim();
-            else
-                return Creature::CanSwim();
-        }
-
-        void RegenerateAll(uint32 update_diff) override;    // overwrite Creature::RegenerateAll
-        void Regenerate(Powers power);
-        void LooseHappiness();
+        void RegenerateAll(uint32 update_diff);             // overwrite Creature::RegenerateAll
+        void Regenerate(Powers power, uint32 diff);
         HappinessState GetHappinessState();
         void GivePetXP(uint32 xp);
         void GivePetLevel(uint32 level);
@@ -187,31 +194,48 @@ class MANGOS_DLL_SPEC Pet : public Creature
         bool InitStatsForLevel(uint32 level, Unit* owner = NULL);
         bool HaveInDiet(ItemPrototype const* item) const;
         uint32 GetCurrentFoodBenefitLevel(uint32 itemlevel);
-        void SetDuration(int32 dur) { m_duration = dur; }
+        void SetDuration(uint32 dur) { m_duration = dur; }
 
-        int32 GetBonusDamage() { return m_bonusdamage; }
-        void SetBonusDamage(int32 damage) { m_bonusdamage = damage; }
-
-        bool UpdateStats(Stats stat) override;
-        bool UpdateAllStats() override;
-        void UpdateResistances(uint32 school) override;
-        void UpdateArmor() override;
-        void UpdateMaxHealth() override;
-        void UpdateMaxPower(Powers power) override;
-        void UpdateAttackPowerAndDamage(bool ranged = false) override;
-        void UpdateDamagePhysical(WeaponAttackType attType) override;
+        bool UpdateStats(Stats stat);
+        bool UpdateAllStats();
+        void UpdateResistances(uint32 school);
+        void UpdateArmor();
+        void UpdateMaxHealth();
+        void UpdateMaxPower(Powers power);
+        void UpdateAttackPowerAndDamage(bool ranged = false);
+        void UpdateDamagePhysical(WeaponAttackType attType);
+        void UpdateSpellPower();
+        void UpdateManaRegen();
 
         bool CanTakeMoreActiveSpells(uint32 SpellIconID);
         void ToggleAutocast(uint32 spellid, bool apply);
 
-        void ApplyModeFlags(PetModeFlags mode, bool apply);
-        PetModeFlags GetModeFlags() const { return m_petModeFlags; }
-
-        bool HasSpell(uint32 spell) const override;
+        bool HasSpell(uint32 spell) const;
 
         void LearnPetPassives();
         void CastPetAuras(bool current);
         void CastPetAura(PetAura const* aura);
+
+        void RegenerateHealth(uint32 diff);
+        float OCTRegenHPPerSpirit();
+        float OCTRegenMPPerSpirit();
+        void CastPetPassiveAuras(bool current);
+        void ApplyScalingBonus(ScalingAction* action);
+        void ApplyAllScalingBonuses(bool apply);
+        void ApplyStatScalingBonus(Stats stat, bool apply);
+        void ApplyResistanceScalingBonus(uint32 school, bool apply);
+        void ApplyAttackPowerScalingBonus(bool apply);
+        void ApplyDamageScalingBonus(bool apply);
+        void ApplySpellDamageScalingBonus(bool apply);
+        void ApplyHitScalingBonus(bool apply);
+        void ApplySpellHitScalingBonus(bool apply);
+        void ApplyExpertizeScalingBonus(bool apply);
+        void ApplyPowerregenScalingBonus(bool apply);
+        void ApplyAttackSpeedScalingBonus(bool apply);
+        bool ReapplyScalingAura(Aura* aura, int32 basePoints);
+        PetScalingData* CalculateScalingData( bool recalculate = false );
+        void AddScalingAction(ScalingTarget target, uint32 stat, bool apply);
+        void ApplyHappinessBonus(bool apply);
 
         void _LoadSpellCooldowns();
         void _SaveSpellCooldowns();
@@ -220,7 +244,7 @@ class MANGOS_DLL_SPEC Pet : public Creature
         void _LoadSpells();
         void _SaveSpells();
 
-        bool addSpell(uint32 spell_id, ActiveStates active = ACT_DECIDE, PetSpellState state = PETSPELL_NEW, PetSpellType type = PETSPELL_NORMAL);
+        bool addSpell(uint32 spell_id,ActiveStates active = ACT_DECIDE, PetSpellState state = PETSPELL_NEW, PetSpellType type = PETSPELL_NORMAL);
         bool learnSpell(uint32 spell_id);
         void learnSpellHighRank(uint32 spellid);
         void InitLevelupSpellsForLevel();
@@ -233,9 +257,8 @@ class MANGOS_DLL_SPEC Pet : public Creature
 
         void InitPetCreateSpells();
 
-        bool resetTalents(bool no_cost = false);
+        bool resetTalents();
         static void resetTalentsForAllPetsOf(Player* owner, Pet* online_pet = NULL);
-        uint32 resetTalentsCost() const;
         void InitTalentForLevel();
 
         uint8 GetMaxTalentPointsForLevel(uint32 level);
@@ -243,13 +266,24 @@ class MANGOS_DLL_SPEC Pet : public Creature
         void SetFreeTalentPoints(uint8 points) { SetByteValue(UNIT_FIELD_BYTES_1, 1, points); }
         void UpdateFreeTalentPoints(bool resetIfNeed = true);
 
-        uint32  m_resetTalentsCost;
-        time_t  m_resetTalentsTime;
         uint32  m_usedTalentCount;
 
         const uint64& GetAuraUpdateMask() const { return m_auraUpdateMask; }
         void SetAuraUpdateMask(uint8 slot) { m_auraUpdateMask |= (uint64(1) << slot); }
         void ResetAuraUpdateMask() { m_auraUpdateMask = 0; }
+
+        float GetPetFollowAngle() const { return m_petFollowAngle; }
+        void SetPetFollowAngle(float angle) { m_petFollowAngle = angle; }
+
+        Unit* GetOwner() const;
+        bool GetNeedSave() const { return m_needSave; }
+        void SetNeedSave(bool needSave) { m_needSave = needSave; }
+        uint8 GetPetCounter() { return m_petCounter; }
+        void SetPetCounter(uint8 counter) { m_petCounter = counter; }
+        bool Summon();
+        void SetCreateSpellID(uint32 SpellID) { m_createSpellID = SpellID; }
+        uint32 GetCreateSpellID() { return m_createSpellID; }
+        bool IsInWorld() const { return ( !m_loading && !m_removed && Object::IsInWorld()); }
 
         // overwrite Creature function for name localization back to WorldObject version without localization
         const char* GetNameForLocaleIdx(int32 locale_idx) const { return WorldObject::GetNameForLocaleIdx(locale_idx); }
@@ -257,26 +291,80 @@ class MANGOS_DLL_SPEC Pet : public Creature
         DeclinedName const* GetDeclinedNames() const { return m_declinedname; }
 
         bool    m_removed;                                  // prevent overwrite pet state in DB at next Pet::Update if pet already removed(saved)
+        bool    m_updated;                                  // pet updated now
     protected:
         uint32  m_happinessTimer;
         PetType m_petType;
         int32   m_duration;                                 // time until unsummon (used mostly for summoned guardians and not used for controlled pets)
-        int32   m_bonusdamage;
         uint64  m_auraUpdateMask;
         bool    m_loading;
+        bool    m_needSave;                                 // is pet needed to be saved in DB
+        float   m_petFollowAngle;                           // follow angle for the pet
+        uint8   m_petCounter;
+        PetScalingData*  m_PetScalingData;
+        PetScalingData*  m_baseBonusData;
+        uint32  m_createSpellID;
+        std::queue<ScalingAction> m_scalingQueue;
+        uint8   m_HappinessState;
 
-        DeclinedName* m_declinedname;
+        DeclinedName *m_declinedname;
 
     private:
-        PetModeFlags m_petModeFlags;
-
-        void SaveToDB(uint32, uint8, uint32) override       // overwrite of Creature::SaveToDB     - don't must be called
+        void SaveToDB(uint32, uint8, uint32)                // overwrited of Creature::SaveToDB     - don't must be called
         {
             MANGOS_ASSERT(false);
         }
-        void DeleteFromDB() override                        // overwrite of Creature::DeleteFromDB - don't must be called
+        void DeleteFromDB()                                 // overwrited of Creature::DeleteFromDB - don't must be called
         {
             MANGOS_ASSERT(false);
         }
 };
+
+
+struct ApplyScalingBonusWithHelper
+{
+    explicit ApplyScalingBonusWithHelper(ScalingTarget _target, uint32 _stat, bool _apply ) :
+                                         target(_target), stat(_stat), apply(_apply)
+    {}
+    void operator()(Unit* unit) const;
+    ScalingTarget target;
+    uint32 stat;
+    bool apply;
+};
+
+struct ApplyArenaPreparationWithHelper
+{
+    explicit ApplyArenaPreparationWithHelper(bool _apply ) : apply(_apply)
+    {}
+    void operator()(Unit* unit) const;
+    bool apply;
+};
+
+struct DoPetActionWithHelper
+{
+    explicit DoPetActionWithHelper( Player* _owner, uint8 _flag, uint32 _spellid, ObjectGuid _petGuid, ObjectGuid _targetGuid) :
+             owner(_owner), flag(_flag), spellid(_spellid), petGuid(_petGuid), targetGuid(_targetGuid)
+    {}
+    void operator()(Unit* unit) const { unit->DoPetAction(owner, flag, spellid, petGuid, targetGuid); }
+    Player* owner;
+    uint8 flag;
+    uint32 spellid;
+    ObjectGuid petGuid;
+    ObjectGuid targetGuid;
+};
+
+struct DoPetCastWithHelper
+{
+    explicit DoPetCastWithHelper( Player* _owner, uint8 _cast_count, SpellCastTargets* _targets, SpellEntry const* _spellInfo ) :
+             owner(_owner), cast_count(_cast_count), targets(_targets), spellInfo(_spellInfo)
+    {}
+    void operator()(Unit* unit) const { unit->DoPetCastSpell(owner,cast_count,targets,spellInfo ); }
+    Player* owner;
+    uint8 cast_count;
+    SpellCastTargets* targets;
+    SpellEntry const* spellInfo;
+};
+
+typedef std::map<uint32,std::string> KnownPetNames;
+
 #endif

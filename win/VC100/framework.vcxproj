@@ -292,6 +292,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\dep\fastmm\FastMM.h" />
     <ClInclude Include="..\..\src\framework\Dynamic\FactoryHolder.h" />
     <ClInclude Include="..\..\src\framework\Dynamic\ObjectRegistry.h" />
     <ClInclude Include="..\..\src\framework\GameSystem\Grid.h" />
@@ -307,6 +308,7 @@
     <ClInclude Include="..\..\src\framework\Policies\CreationPolicy.h" />
     <ClInclude Include="..\..\src\framework\Policies\ObjectLifeTime.h" />
     <ClInclude Include="..\..\src\framework\Policies\Singleton.h" />
+    <ClInclude Include="..\..\src\framework\Policies\SingletonImp.h" />
     <ClInclude Include="..\..\src\framework\Policies\ThreadingModel.h" />
     <ClInclude Include="..\..\src\framework\Utilities\ByteConverter.h" />
     <ClInclude Include="..\..\src\framework\Utilities\Callback.h" />
@@ -318,8 +320,17 @@
     <ClInclude Include="..\..\src\framework\Utilities\UnorderedMapSet.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\framework\Policies\MemoryManagement.cpp" />
     <ClCompile Include="..\..\src\framework\Policies\ObjectLifeTime.cpp" />
     <ClCompile Include="..\..\src\framework\Utilities\EventProcessor.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\dep\fastmm\FastMMx64.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Library>
+    <Library Include="..\..\dep\fastmm\FastMM.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </Library>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,5 +1,5 @@
 /*
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,98 +16,102 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/*
- * @addtogroup TransportSystem to provide abstract support for transported entities
- * The Transport System in MaNGOS consists of these files:
- * - TransportSystem.h to provide the basic classes TransportBase and TransportInfo
- * - TransportSystem.cpp which implements these classes
- * - Vehicle.h as a vehicle is a transporter it will inherit itr transporter-information from TransportBase
- * - Transports.h to implement the MOTransporter (subclas of gameobject) - Remains TODO
- * as well of
- * - impacts to various files
- *
- * @{
- *
- * @file Vehicle.h
- * This file contains the headers for the functionality required by Vehicles
- *
- */
-
 #ifndef MANGOSSERVER_VEHICLE_H
 #define MANGOSSERVER_VEHICLE_H
 
 #include "Common.h"
-#include "TransportSystem.h"
+#include "ObjectGuid.h"
+#include "Creature.h"
+#include "Unit.h"
+#include "SharedDefines.h"
 
-class Unit;
+#define SPELL_RIDE_VEHICLE_HARDCODED 46598
 
 struct VehicleEntry;
-struct VehicleSeatEntry;
+
+class VehicleInfo
+{
+        VehicleEntry const* m_vehicleEntry;
+    public:
+        explicit VehicleInfo(VehicleEntry const* entry);
+
+        VehicleEntry const* GetEntry() const { return m_vehicleEntry; }
+};
+
+struct VehicleSeat
+{
+    VehicleSeat(VehicleSeatEntry const *pSeatInfo = NULL) : seatInfo(pSeatInfo), passenger(NULL) {}
+
+    VehicleSeatEntry const* seatInfo;
+    Unit* passenger;
+    bool IsProtectPassenger() const;
+};
+
+typedef std::map<int8, VehicleSeat> SeatMap;
 
 struct VehicleAccessory
 {
-    uint32 vehicleEntry;
-    uint32 seatId;
-    uint32 passengerEntry;
+    explicit VehicleAccessory(uint32 _uiAccessory, int32 _uiSeat, bool _bMinion) : uiAccessory(_uiAccessory), uiSeat(_uiSeat), bMinion(_bMinion) 
+    {
+        m_offsetX = m_offsetY = m_offsetZ = m_offsetO = 0.0f;
+    }
+    void Offset(float x, float y, float z, float o = 0.0f) {m_offsetX = x; m_offsetY = y; m_offsetZ = z; m_offsetO = o;};
+    uint32 uiAccessory;
+    int32   uiSeat;
+    bool   bMinion;
+    float m_offsetX, m_offsetY, m_offsetZ, m_offsetO;
 };
 
-typedef std::map<uint8 /*seatPosition*/, VehicleSeatEntry const*> VehicleSeatMap;
+typedef std::vector<VehicleAccessory> VehicleAccessoryList;
+typedef std::map<uint32, VehicleAccessoryList> VehicleAccessoryMap;
 
-/*
- * A class to provide support for each vehicle. This includes
- * - Boarding and unboarding of passengers, including support to switch vehicles
- * - Basic checks if a passenger can board
- */
-class VehicleInfo : public TransportBase
+class MANGOS_DLL_SPEC VehicleKit
 {
     public:
-        explicit VehicleInfo(Unit* owner, VehicleEntry const* vehicleEntry, uint32 overwriteNpcEntry);
-        void Initialize();                                  ///< Initializes the accessories
-        bool IsInitialized() const { return m_isInitialized; }
+        explicit VehicleKit(Unit* base);
+        ~VehicleKit();
 
-        ~VehicleInfo();
+        void Reset();
+        void InstallAllAccessories(uint32 entry);
 
-        VehicleEntry const* GetVehicleEntry() const { return m_vehicleEntry; }
+        bool HasEmptySeat(int8 seatId) const;
+        Unit *GetPassenger(int8 seatId) const;
+        int8 GetNextEmptySeat(int8 seatId, bool next) const;
+        bool AddPassenger(Unit *passenger, int8 seatId = -1);
+        void RemovePassenger(Unit *passenger, bool dismount = false);
+        void RelocatePassengers(float x, float y, float z, float ang);
+        void RemoveAllPassengers();
+        VehicleSeatEntry const* GetSeatInfo(Unit* passenger);
+        int8 GetSeatId(Unit* passenger);
+        void SetDestination(float x, float y, float z, float o, float speed, float elevation);
+        void SetDestination() { m_dst_x = 0.0f; m_dst_y = 0.0f; m_dst_z  = 0.0f; m_dst_o  = 0.0f; m_dst_speed  = 0.0f; m_dst_elevation  = 0.0f; b_dstSet = false;};
 
-        void Board(Unit* passenger, uint8 seat);            // Board a passenger to a vehicle
-        void SwitchSeat(Unit* passenger, uint8 seat);       // Used to switch seats of a passenger
-        void UnBoard(Unit* passenger, bool changeVehicle);  // Used to Unboard a passenger from a vehicle
-
-        bool CanBoard(Unit* passenger) const;               // Used to check if a Unit can board a vehicle
-        Unit* GetPassenger(uint8 seat) const;
-
-        void RemoveAccessoriesFromMap();                    ///< Unsummones accessory in case of far-teleport or death
+        Unit* GetBase() const { return m_pBase; }
+        Aura* GetControlAura(Unit* passenger);
 
     private:
-        // Internal use to calculate the boarding position
-        void CalculateBoardingPositionOf(float gx, float gy, float gz, float go, float& lx, float& ly, float& lz, float& lo) const;
+        void UpdateFreeSeatCount();
+        void InstallAccessory(VehicleAccessory const* accessory);
 
-        // Seat information
-        VehicleSeatEntry const* GetSeatEntry(uint8 seat) const;
-        bool GetUsableSeatFor(Unit* passenger, uint8& seat) const;
-        bool IsSeatAvailableFor(Unit* passenger, uint8 seat) const;
+        void Dismount(Unit* passenger, VehicleSeatEntry const* pSeatInfo = NULL);
 
-        uint8 GetTakenSeatsMask() const;
-        uint8 GetEmptySeatsMask() const { return ~GetTakenSeatsMask(); }
-        uint8 GetEmptySeats() const { return m_vehicleSeats.size() - m_passengers.size(); }
+        SeatMap m_Seats;
+        uint32 m_uiNumFreeSeats;
+        Unit* m_pBase;
+        bool  b_dstSet;
+        float m_dst_x, m_dst_y, m_dst_z, m_dst_o, m_dst_speed, m_dst_elevation;
 
-        bool IsUsableSeatForPlayer(uint32 seatFlags) const;
-        bool IsUsableSeatForCreature(uint32 seatFlags) const { return true; } // special flag?, !IsUsableSeatForPlayer(seatFlags)?
+};
 
-        // Apply/ Remove Controlling of the vehicle
-        void ApplySeatMods(Unit* passenger, uint32 seatFlags);
-        void RemoveSeatMods(Unit* passenger, uint32 seatFlags);
+class PassengerEjectEvent : public BasicEvent
+{
+    public:
+        PassengerEjectEvent(uint8 seatId, Unit& vehicle) : BasicEvent(), m_seatId(seatId), m_vehicle(vehicle) {}
+        bool Execute(uint64 e_time, uint32 p_time);
 
-        VehicleEntry const* m_vehicleEntry;
-        VehicleSeatMap m_vehicleSeats;                      ///< Stores the available seats of the vehicle (filled in constructor)
-        uint8 m_creatureSeats;                              ///< Mask that stores which seats are avaiable for creatures
-        uint8 m_playerSeats;                                ///< Mask that stores which seats are avaiable for players
-
-        uint32 m_overwriteNpcEntry;                         // Internal use to store the entry with which the vehicle-accessories are fetched
-        bool m_isInitialized;                               // Internal use to store if the accessory is initialized
-        GuidSet m_accessoryGuids;                           ///< Stores the summoned accessories of this vehicle
+    private:
+        uint8 m_seatId;
+        Unit& m_vehicle;
 };
 
 #endif
-
-/*! @} */

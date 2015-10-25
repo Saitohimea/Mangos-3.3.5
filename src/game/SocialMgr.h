@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,11 +30,11 @@ class WorldPacket;
 
 enum FriendStatus
 {
-    FRIEND_STATUS_OFFLINE   = 0,
-    FRIEND_STATUS_ONLINE    = 1,
-    FRIEND_STATUS_AFK       = 2,
-    FRIEND_STATUS_UNK3      = 3,
-    FRIEND_STATUS_DND       = 4
+    FRIEND_STATUS_OFFLINE   = 0x00,
+    FRIEND_STATUS_ONLINE    = 0x01,
+    FRIEND_STATUS_AFK       = 0x02,
+    FRIEND_STATUS_DND       = 0x04,
+    FRIEND_STATUS_RAF       = 0x08,
 };
 
 enum SocialFlag
@@ -42,34 +42,36 @@ enum SocialFlag
     SOCIAL_FLAG_FRIEND      = 0x01,
     SOCIAL_FLAG_IGNORED     = 0x02,
     SOCIAL_FLAG_MUTED       = 0x04,                         // guessed
-    SOCIAL_FLAG_RAF         = 0x08                          // Recruit-A-Friend
 };
 
 struct FriendInfo
 {
-    FriendStatus Status;
+    uint8  Status;
     uint32 Flags;
     uint32 Area;
     uint32 Level;
     uint32 Class;
     std::string Note;
 
-    FriendInfo() :
-        Status(FRIEND_STATUS_OFFLINE),
-        Flags(0),
-        Area(0),
-        Level(0),
-        Class(0)
-    {}
+    FriendInfo()
+    {
+        Status = FRIEND_STATUS_OFFLINE;
+        Flags = 0;
+        Area = 0;
+        Level = 0;
+        Class = 0;
+        Note = "";
+    }
 
-    FriendInfo(uint32 flags, const std::string& note) :
-        Status(FRIEND_STATUS_OFFLINE),
-        Flags(flags),
-        Area(0),
-        Level(0),
-        Class(0),
-        Note(note)
-    {}
+    FriendInfo(uint32 flags, const std::string& note)
+    {
+        Status = FRIEND_STATUS_OFFLINE;
+        Flags = flags;
+        Area = 0;
+        Level = 0;
+        Class = 0;
+        Note = note;
+    }
 };
 
 typedef std::map<uint32, FriendInfo> PlayerSocialMap;
@@ -112,7 +114,7 @@ enum FriendsResult
 
 class PlayerSocial
 {
-        friend class SocialMgr;
+    friend class SocialMgr;
     public:
         PlayerSocial();
         ~PlayerSocial();
@@ -140,13 +142,13 @@ class SocialMgr
         // Misc
         void RemovePlayerSocial(uint32 guid) { m_socialMap.erase(guid); }
 
-        void GetFriendInfo(Player* player, uint32 friendGUID, FriendInfo& friendInfo);
+        void GetFriendInfo(Player *player, uint32 friendGUID, FriendInfo &friendInfo);
         // Packet management
-        void MakeFriendStatusPacket(FriendsResult result, uint32 friend_guid, WorldPacket* data);
-        void SendFriendStatus(Player* player, FriendsResult result, ObjectGuid friend_guid, bool broadcast);
-        void BroadcastToFriendListers(Player* player, WorldPacket* packet);
+        void MakeFriendStatusPacket(FriendsResult result, uint32 friend_guid, WorldPacket *data);
+        void SendFriendStatus(Player *player, FriendsResult result, ObjectGuid friend_guid, bool broadcast);
+        void BroadcastToFriendListers(Player *player, WorldPacket *packet);
         // Loading
-        PlayerSocial* LoadFromDB(QueryResult* result, ObjectGuid guid);
+        PlayerSocial *LoadFromDB(QueryResult *result, ObjectGuid guid);
     private:
         SocialMap m_socialMap;
 };

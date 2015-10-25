@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,21 +20,24 @@
 #define MANGOS_CONFUSEDMOVEMENTGENERATOR_H
 
 #include "MovementGenerator.h"
+#include "Timer.h"
 
 template<class T>
 class MANGOS_DLL_SPEC ConfusedMovementGenerator
-    : public MovementGeneratorMedium< T, ConfusedMovementGenerator<T> >
+: public MovementGeneratorMedium< T, ConfusedMovementGenerator<T> >
 {
     public:
         explicit ConfusedMovementGenerator() : i_nextMoveTime(0) {}
 
-        void Initialize(T&);
-        void Finalize(T&);
-        void Interrupt(T&);
-        void Reset(T&);
-        bool Update(T&, const uint32&);
+        void Initialize(T &);
+        void Finalize(T &);
+        void Interrupt(T &);
+        void Reset(T &);
+        bool Update(T &, const uint32 &);
 
         MovementGeneratorType GetMovementGeneratorType() const { return CONFUSED_MOTION_TYPE; }
+
+        const char* Name() const { return "<Confused>"; }
     private:
         TimeTracker i_nextMoveTime;
         float i_x, i_y, i_z;

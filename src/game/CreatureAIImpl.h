@@ -1,5 +1,5 @@
 /*
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 #ifndef CREATUREAIIMPL_H
 #define CREATUREAIIMPL_H
 
@@ -23,9 +22,9 @@
 
 template<class REAL_AI>
 inline CreatureAI*
-CreatureAIFactory<REAL_AI>::Create(void* data) const
+CreatureAIFactory<REAL_AI>::Create(void *data) const
 {
-    Creature* creature = reinterpret_cast<Creature*>(data);
+    Creature* creature = reinterpret_cast<Creature *>(data);
     return (new REAL_AI(creature));
 }
 #endif

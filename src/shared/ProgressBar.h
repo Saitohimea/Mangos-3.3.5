@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,59 +14,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
-
 #ifndef MANGOSSERVER_PROGRESSBAR_H
 #define MANGOSSERVER_PROGRESSBAR_H
 
 #include "Platform/Define.h"
 
-/**
- * @brief
- *
- */
 class MANGOS_DLL_SPEC BarGoLink
 {
-    public:
-        /**
-         * @brief constructors
-         *
-         * @param row_count
-         */
+    public:                                                 // constructors
         explicit BarGoLink(int row_count);
+        explicit BarGoLink(uint32 row_count);               // row_count < ACE_INT32_MAX
+        explicit BarGoLink(uint64 row_count);               // row_count < ACE_INT32_MAX
         ~BarGoLink();
 
-    public:
-        /**
-         * @brief modifiers
-         *
-         */
+    public:                                                 // modifiers
         void step();
 
-        /**
-         * @brief
-         *
-         * @param on
-         */
         static void SetOutputState(bool on);
     private:
-        /**
-         * @brief
-         *
-         * @param row_count
-         */
         void init(int row_count);
 
-        static bool m_showOutput; /**< not recommended change with existed active bar */
-        static char const* const empty; /**< TODO */
-        static char const* const full; /**< TODO */
+        static bool m_showOutput;                           // not recommended change with existed active bar
+        static char const * const empty;
+        static char const * const full;
 
-        int rec_no; /**< TODO */
-        int rec_pos; /**< TODO */
-        int num_rec; /**< TODO */
-        int indic_len; /**< TODO */
+        int rec_no;
+        int rec_pos;
+        int num_rec;
+        int indic_len;
 };
 #endif

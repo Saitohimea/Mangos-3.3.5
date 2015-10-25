@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,24 +20,22 @@
 #include "Creature.h"
 #include "DBCStores.h"
 #include "Spell.h"
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
-
-static_assert(MAXIMAL_AI_EVENT_EVENTAI <= 32, "Maximal 32 AI_EVENTs supported with EventAI");
 
 CreatureAI::~CreatureAI()
 {
 }
 
-void CreatureAI::AttackedBy(Unit* attacker)
+void CreatureAI::AttackedBy( Unit* attacker )
 {
-    if (!m_creature->getVictim())
+    if(!m_creature->getVictim())
         AttackStart(attacker);
 }
 
-CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, bool isTriggered)
+CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry *pSpell, bool isTriggered)
 {
+    if (!pTarget)
+        return CAST_FAIL_OTHER;
+
     // If not triggered, we check
     if (!isTriggered)
     {
@@ -56,12 +54,12 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
             return CAST_FAIL_POWER;
     }
 
-    if (const SpellRangeEntry* pSpellRange = sSpellRangeStore.LookupEntry(pSpell->rangeIndex))
+    if (const SpellRangeEntry *pSpellRange = sSpellRangeStore.LookupEntry(pSpell->rangeIndex))
     {
         if (pTarget != m_creature)
         {
             // pTarget is out of range of this spell (also done by Spell::CheckCast())
-            float fDistance = m_creature->GetCombatDistance(pTarget, pSpell->rangeIndex == SPELL_RANGE_IDX_COMBAT);
+            float fDistance = m_creature->GetCombatDistance(pTarget);
 
             if (fDistance > (m_creature->IsHostileTo(pTarget) ? pSpellRange->maxRange : pSpellRange->maxRangeFriendly))
                 return CAST_FAIL_TOO_FAR;
@@ -84,6 +82,9 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
 
     if (uiCastFlags & CAST_FORCE_TARGET_SELF)
         pCaster = pTarget;
+
+    if (!pTarget)
+        return CAST_FAIL_OTHER;
 
     // Allowed to cast only if not casting (unless we interrupt ourself) or if spell is triggered
     if (!pCaster->IsNonMeleeSpellCasted(false) || (uiCastFlags & (CAST_TRIGGERED | CAST_INTERRUPT_PREVIOUS)))
@@ -123,115 +124,23 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
         return CAST_FAIL_IS_CASTING;
 }
 
+bool CreatureAI::AttackByType(WeaponAttackType attType)
+{
+    // Make sure our attack is ready before checking distance
+    if (m_creature->isAttackReady(attType) && m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
+    {
+        m_creature->AttackerStateUpdate(m_creature->getVictim(), attType);
+        m_creature->resetAttackTimer(attType);
+        WeaponAttackType attTypeTwo = (attType == BASE_ATTACK ? OFF_ATTACK : BASE_ATTACK);
+        if (m_creature->getAttackTimer(attTypeTwo) < 500)
+            m_creature->setAttackTimer(attTypeTwo, 500);
+        return true;
+    }
+
+    return false;
+}
+
 bool CreatureAI::DoMeleeAttackIfReady()
 {
     return m_creature->UpdateMeleeAttackingState();
-}
-
-void CreatureAI::SetCombatMovement(bool enable, bool stopOrStartMovement /*=false*/)
-{
-    m_isCombatMovement = enable;
-
-    if (enable)
-        m_creature->clearUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT);
-    else
-        m_creature->addUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT);
-
-    if (stopOrStartMovement && m_creature->getVictim())     // Only change current movement while in combat
-    {
-        if (enable)
-            m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim(), m_attackDistance, m_attackAngle);
-        else if (!enable && m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
-            m_creature->StopMoving();
-    }
-}
-
-void CreatureAI::HandleMovementOnAttackStart(Unit* victim)
-{
-    if (m_isCombatMovement)
-        m_creature->GetMotionMaster()->MoveChase(victim, m_attackDistance, m_attackAngle);
-    // TODO - adapt this to only stop OOC-MMGens when MotionMaster rewrite is finished
-    else if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE || m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == RANDOM_MOTION_TYPE)
-    {
-        m_creature->GetMotionMaster()->MoveIdle();
-        m_creature->StopMoving();
-    }
-}
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////
-//                                      Event system
-// ////////////////////////////////////////////////////////////////////////////////////////////////
-
-class AiDelayEventAround : public BasicEvent
-{
-    public:
-        AiDelayEventAround(AIEventType eventType, ObjectGuid invokerGuid, Creature& owner, std::list<Creature*> const& receivers, uint32 miscValue) :
-            BasicEvent(),
-            m_eventType(eventType),
-            m_invokerGuid(invokerGuid),
-            m_owner(owner),
-            m_miscValue(miscValue)
-        {
-            // Pushing guids because in delay can happen some creature gets despawned => invalid pointer
-            m_receiverGuids.reserve(receivers.size());
-            for (std::list<Creature*>::const_iterator itr = receivers.begin(); itr != receivers.end(); ++itr)
-                m_receiverGuids.push_back((*itr)->GetObjectGuid());
-        }
-
-        bool Execute(uint64 /*e_time*/, uint32 /*p_time*/) override
-        {
-            Unit* pInvoker = m_owner.GetMap()->GetUnit(m_invokerGuid);
-
-            for (GuidVector::const_reverse_iterator itr = m_receiverGuids.rbegin(); itr != m_receiverGuids.rend(); ++itr)
-            {
-                if (Creature* pReceiver = m_owner.GetMap()->GetAnyTypeCreature(*itr))
-                {
-                    pReceiver->AI()->ReceiveAIEvent(m_eventType, &m_owner, pInvoker, m_miscValue);
-                    // Special case for type 0 (call-assistance)
-                    if (m_eventType == AI_EVENT_CALL_ASSISTANCE && pInvoker && pReceiver->CanAssistTo(&m_owner, pInvoker))
-                    {
-                        pReceiver->SetNoCallAssistance(true);
-                        pReceiver->AI()->AttackStart(pInvoker);
-                    }
-                }
-            }
-            m_receiverGuids.clear();
-
-            return true;
-        }
-
-    private:
-        AiDelayEventAround();
-
-        ObjectGuid m_invokerGuid;
-        GuidVector m_receiverGuids;
-        Creature&  m_owner;
-
-        AIEventType m_eventType;
-        uint32 m_miscValue;
-};
-
-void CreatureAI::SendAIEventAround(AIEventType eventType, Unit* pInvoker, uint32 uiDelay, float fRadius, uint32 miscValue /*=0*/) const
-{
-    if (fRadius > 0)
-    {
-        std::list<Creature*> receiverList;
-
-        // Use this check here to collect only assitable creatures in case of CALL_ASSISTANCE, else be less strict
-        MaNGOS::AnyAssistCreatureInRangeCheck u_check(m_creature, eventType == AI_EVENT_CALL_ASSISTANCE ? pInvoker : NULL, fRadius);
-        MaNGOS::CreatureListSearcher<MaNGOS::AnyAssistCreatureInRangeCheck> searcher(receiverList, u_check);
-        Cell::VisitGridObjects(m_creature, searcher, fRadius);
-
-        if (!receiverList.empty())
-        {
-            AiDelayEventAround* e = new AiDelayEventAround(eventType, pInvoker ? pInvoker->GetObjectGuid() : ObjectGuid(), *m_creature, receiverList, miscValue);
-            m_creature->m_Events.AddEvent(e, m_creature->m_Events.CalculateTime(uiDelay));
-        }
-    }
-}
-
-void CreatureAI::SendAIEvent(AIEventType eventType, Unit* pInvoker, Creature* pReceiver, uint32 miscValue /*=0*/) const
-{
-    MANGOS_ASSERT(pReceiver);
-    pReceiver->AI()->ReceiveAIEvent(eventType, m_creature, pInvoker, miscValue);
 }

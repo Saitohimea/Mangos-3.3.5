@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,31 +37,31 @@
 class MANGOS_DLL_SPEC PostgreSQLConnection : public SqlConnection
 {
     public:
-        PostgreSQLConnection(Database &db) : SqlConnection(db), mPGconn(NULL) {}
+        PostgreSQLConnection() : mPGconn(NULL) {}
         ~PostgreSQLConnection();
 
-        bool Initialize(const char* infoString) override;
+        bool Initialize(const char *infoString);
 
-        QueryResult* Query(const char* sql) override;
-        QueryNamedResult* QueryNamed(const char* sql) override;
-        bool Execute(const char* sql) override;
+        QueryResult* Query(const char *sql);
+        QueryNamedResult* QueryNamed(const char *sql);
+        bool Execute(const char *sql);
 
-        unsigned long escape_string(char* to, const char* from, unsigned long length);
+        unsigned long escape_string(char *to, const char *from, unsigned long length);
 
-        bool BeginTransaction() override;
-        bool CommitTransaction() override;
-        bool RollbackTransaction() override;
+        bool BeginTransaction();
+        bool CommitTransaction();
+        bool RollbackTransaction();
 
     private:
-        bool _TransactionCmd(const char* sql);
-        bool _Query(const char* sql, PGresult** pResult, uint64* pRowCount, uint32* pFieldCount) override;
+        bool _TransactionCmd(const char *sql);
+        bool _Query(const char *sql, PGresult **pResult, uint64* pRowCount, uint32* pFieldCount);
 
-        PGconn* mPGconn;
+        PGconn *mPGconn;
 };
 
 class MANGOS_DLL_SPEC DatabasePostgre : public Database
 {
-        friend class MaNGOS::OperatorNew<DatabasePostgre>;
+    friend class MaNGOS::OperatorNew<DatabasePostgre>;
 
     public:
         DatabasePostgre();
@@ -71,7 +71,7 @@ class MANGOS_DLL_SPEC DatabasePostgre : public Database
         /*! infoString should be formated like hostname;username;password;database. */
 
     protected:
-        virtual SqlConnection* CreateConnection() override;
+        virtual SqlConnection * CreateConnection();
 
     private:
         static size_t db_count;

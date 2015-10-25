@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2009-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #include "Threading.h"
@@ -30,7 +27,7 @@ using namespace ACE_Based;
 ThreadPriority::ThreadPriority()
 {
     for (int i = Idle; i < MAXPRIORITYNUM; ++i)
-        { m_priority[i] = ACE_THR_PRI_OTHER_DEF; }
+        m_priority[i] = ACE_THR_PRI_OTHER_DEF;
 
     m_priority[Idle] = ACE_Sched_Params::priority_min(ACE_SCHED_OTHER);
     m_priority[Realtime] = ACE_Sched_Params::priority_max(ACE_SCHED_OTHER);
@@ -46,30 +43,30 @@ ThreadPriority::ThreadPriority()
         pr_iter.next();
     }
 
-    MANGOS_ASSERT(!_tmp.empty());
+    MANGOS_ASSERT (!_tmp.empty());
 
-    if (_tmp.size() >= MAXPRIORITYNUM)
+    if(_tmp.size() >= MAXPRIORITYNUM)
     {
         const size_t max_pos = _tmp.size();
         size_t min_pos = 1;
         size_t norm_pos = 0;
         for (size_t i = 0; i < max_pos; ++i)
         {
-            if (_tmp[i] == ACE_THR_PRI_OTHER_DEF)
+            if(_tmp[i] == ACE_THR_PRI_OTHER_DEF)
             {
                 norm_pos = i + 1;
                 break;
             }
         }
 
-        // since we have only 7(seven) values in enum Priority
-        // and 3 we know already (Idle, Normal, Realtime) so
-        // we need to split each list [Idle...Normal] and [Normal...Realtime]
-        // into ¹ piesces
+        //since we have only 7(seven) values in enum Priority
+        //and 3 we know already (Idle, Normal, Realtime) so
+        //we need to split each list [Idle...Normal] and [Normal...Realtime]
+        //into ¹ piesces
         const size_t _divider = 4;
         size_t _div = (norm_pos - min_pos) / _divider;
-        if (_div == 0)
-            { _div = 1; }
+        if(_div == 0)
+            _div = 1;
 
         min_pos = (norm_pos - 1);
 
@@ -77,8 +74,8 @@ ThreadPriority::ThreadPriority()
         m_priority[Lowest] = _tmp[min_pos -= _div ];
 
         _div = (max_pos - norm_pos) / _divider;
-        if (_div == 0)
-            { _div = 1; }
+        if(_div == 0)
+            _div = 1;
 
         min_pos = norm_pos - 1;
 
@@ -89,11 +86,11 @@ ThreadPriority::ThreadPriority()
 
 int ThreadPriority::getPriority(Priority p) const
 {
-    if (p < Idle)
-        { p = Idle; }
+    if(p < Idle)
+        p = Idle;
 
-    if (p > Realtime)
-        { p = Realtime; }
+    if(p > Realtime)
+        p = Realtime;
 
     return m_priority[p];
 }
@@ -106,40 +103,41 @@ int ThreadPriority::getPriority(Priority p) const
 
 Thread::Thread() : m_iThreadId(0), m_hThreadHandle(0), m_task(0)
 {
+
 }
 
 Thread::Thread(Runnable* instance) : m_iThreadId(0), m_hThreadHandle(0), m_task(instance)
 {
     // register reference to m_task to prevent it deeltion until destructor
     if (m_task)
-        { m_task->incReference(); }
+        m_task->incReference();
 
     bool _start = start();
-    MANGOS_ASSERT(_start);
+    MANGOS_ASSERT (_start);
 }
 
 Thread::~Thread()
 {
-    // Wait();
+    //Wait();
 
     // deleted runnable object (if no other references)
     if (m_task)
-        { m_task->decReference(); }
+        m_task->decReference();
 }
 
-// initialize Thread's class static member
+//initialize Thread's class static member
 Thread::ThreadStorage Thread::m_ThreadStorage;
 ThreadPriority Thread::m_TpEnum;
 
 bool Thread::start()
 {
     if (m_task == 0 || m_iThreadId != 0)
-        { return false; }
+        return false;
 
     bool res = (ACE_Thread::spawn(&Thread::ThreadTask, (void*)m_task, THREADFLAG, &m_iThreadId, &m_hThreadHandle) == 0);
 
     if (res)
-        { m_task->incReference(); }
+        m_task->incReference();
 
     return res;
 }
@@ -147,7 +145,7 @@ bool Thread::start()
 bool Thread::wait()
 {
     if (!m_hThreadHandle || !m_task)
-        { return false; }
+        return false;
 
     ACE_THR_FUNC_RETURN _value = ACE_THR_FUNC_RETURN(-1);
     int _res = ACE_Thread::join(m_hThreadHandle, &_value);
@@ -161,10 +159,10 @@ bool Thread::wait()
 void Thread::destroy()
 {
     if (!m_iThreadId || !m_task)
-        { return; }
+        return;
 
     if (ACE_Thread::kill(m_iThreadId, -1) != 0)
-        { return; }
+        return;
 
     m_iThreadId = 0;
     m_hThreadHandle = 0;
@@ -183,9 +181,9 @@ void Thread::resume()
     ACE_Thread::resume(m_hThreadHandle);
 }
 
-ACE_THR_FUNC_RETURN Thread::ThreadTask(void* param)
+ACE_THR_FUNC_RETURN Thread::ThreadTask(void * param)
 {
-    Runnable* _task = (Runnable*)param;
+    Runnable * _task = (Runnable*)param;
     _task->run();
 
     // task execution complete, free referecne added at
@@ -207,17 +205,18 @@ ACE_hthread_t Thread::currentHandle()
     return _handle;
 }
 
-Thread* Thread::current()
+Thread * Thread::current()
 {
-    Thread* _thread = m_ThreadStorage.ts_object();
-    if (!_thread)
+    Thread * _thread = m_ThreadStorage.ts_object();
+    if(!_thread)
     {
         _thread = new Thread();
         _thread->m_iThreadId = Thread::currentId();
         _thread->m_hThreadHandle = Thread::currentHandle();
 
-        Thread* _oldValue = m_ThreadStorage.ts_object(_thread);
-        delete _oldValue;
+        Thread * _oldValue = m_ThreadStorage.ts_object(_thread);
+        if(_oldValue)
+            delete _oldValue;
     }
 
     return _thread;
@@ -228,8 +227,8 @@ void Thread::setPriority(Priority type)
 #ifndef __sun__
     int _priority = m_TpEnum.getPriority(type);
     int _ok = ACE_Thread::setprio(m_hThreadHandle, _priority);
-    // remove this ASSERT in case you don't want to know is thread priority change was successful or not
-    MANGOS_ASSERT (_ok == 0 || (_ok == -1 && errno == ENOTSUP));
+    //remove this ASSERT in case you don't want to know is thread priority change was successful or not
+    MANGOS_ASSERT (_ok == 0);
 #endif
 }
 

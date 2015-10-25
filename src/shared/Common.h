@@ -1,8 +1,5 @@
-/**
- * mangos-zero is a full featured server for World of Warcraft in its vanilla
- * version, supporting clients for patch 1.12.x.
- *
- * Copyright (C) 2005-2014  MaNGOS project <http://getmangos.eu>
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #ifndef MANGOSSERVER_COMMON_H
@@ -29,25 +23,25 @@
 #ifdef HAVE_CONFIG_H
 #ifdef PACKAGE
 #undef PACKAGE
-#endif // PACKAGE
+#endif //PACKAGE
 #ifdef PACKAGE_BUGREPORT
 #undef PACKAGE_BUGREPORT
-#endif // PACKAGE_BUGREPORT
+#endif //PACKAGE_BUGREPORT
 #ifdef PACKAGE_NAME
 #undef PACKAGE_NAME
-#endif // PACKAGE_NAME
+#endif //PACKAGE_NAME
 #ifdef PACKAGE_STRING
 #undef PACKAGE_STRING
-#endif // PACKAGE_STRING
+#endif //PACKAGE_STRING
 #ifdef PACKAGE_TARNAME
 #undef PACKAGE_TARNAME
-#endif // PACKAGE_TARNAME
+#endif //PACKAGE_TARNAME
 #ifdef PACKAGE_VERSION
 #undef PACKAGE_VERSION
-#endif // PACKAGE_VERSION
+#endif //PACKAGE_VERSION
 #ifdef VERSION
 #undef VERSION
-#endif // VERSION
+#endif //VERSION
 # include "config.h"
 #undef PACKAGE
 #undef PACKAGE_BUGREPORT
@@ -56,7 +50,7 @@
 #undef PACKAGE_TARNAME
 #undef PACKAGE_VERSION
 #undef VERSION
-#endif // HAVE_CONFIG_H
+#endif //HAVE_CONFIG_H
 
 #include "Platform/Define.h"
 
@@ -103,10 +97,6 @@
 // Old ACE versions (pre-ACE-5.5.4) not have this type (add for allow use at Unix side external old ACE versions)
 #if PLATFORM != PLATFORM_WINDOWS
 #  ifndef ACE_OFF_T
-/**
- * @brief
- *
- */
 typedef off_t ACE_OFF_T;
 #  endif
 #endif
@@ -158,12 +148,6 @@ typedef off_t ACE_OFF_T;
 
 #define SIZEFMTD ACE_SIZE_T_FORMAT_SPECIFIER
 
-/**
- * @brief
- *
- * @param f
- * @return float
- */
 inline float finiteAlways(float f) { return finite(f) ? f : 0.0f; }
 
 #define atol(a) strtoul( a, NULL, 10)
@@ -179,25 +163,17 @@ inline float finiteAlways(float f) { return finite(f) ? f : 0.0f; }
 #define PAIR32_HIPART(x)   (uint16)((uint32(x) >> 16) & 0x0000FFFF)
 #define PAIR32_LOPART(x)   (uint16)(uint32(x)         & 0x0000FFFF)
 
-/**
- * @brief
- *
- */
 enum TimeConstants
 {
     MINUTE = 60,
-    HOUR   = MINUTE * 60,
-    DAY    = HOUR * 24,
-    WEEK   = DAY * 7,
-    MONTH  = DAY * 30,
-    YEAR   = MONTH * 12,
+    HOUR   = MINUTE*60,
+    DAY    = HOUR*24,
+    WEEK   = DAY*7,
+    MONTH  = DAY*30,
+    YEAR   = MONTH*12,
     IN_MILLISECONDS = 1000
 };
 
-/**
- * @brief
- *
- */
 enum AccountTypes
 {
     SEC_PLAYER         = 0,
@@ -207,10 +183,7 @@ enum AccountTypes
     SEC_CONSOLE        = 4                                  // must be always last in list, accounts must have less security level always also
 };
 
-/**
- * @brief Used in mangosd/realmd
- *
- */
+// Used in mangosd/realmd
 enum RealmFlags
 {
     REALM_FLAG_NONE         = 0x00,
@@ -224,10 +197,6 @@ enum RealmFlags
     REALM_FLAG_FULL         = 0x80
 };
 
-/**
- * @brief
- *
- */
 enum LocaleConstant
 {
     LOCALE_enUS = 0,                                        // also enGB
@@ -243,37 +212,23 @@ enum LocaleConstant
 
 #define MAX_LOCALE 9
 
-/**
- * @brief
- *
- * @param name
- * @return LocaleConstant
- */
 LocaleConstant GetLocaleByName(const std::string& name);
 
-extern char const* localeNames[MAX_LOCALE]; /**< TODO */
+extern char const* localeNames[MAX_LOCALE];
 
-/**
- * @brief
- *
- */
 struct LocaleNameStr
 {
-    char const* name; /**< TODO */
-    LocaleConstant locale; /**< TODO */
+    char const* name;
+    LocaleConstant locale;
 };
 
-extern LocaleNameStr const fullLocaleNameList[]; /**< used for iterate all names including alternative */
+// used for iterate all names including alternative
+extern LocaleNameStr const fullLocaleNameList[];
 
-/**
- * @brief operator new[] based version of strdup() function! Release memory by using operator delete[] !
- *
- * @param source
- * @return char
- */
-inline char* mangos_strdup(const char* source)
+//operator new[] based version of strdup() function! Release memory by using operator delete[] !
+inline char * mangos_strdup(const char * source)
 {
-    char* dest = new char[strlen(source) + 1];
+    char * dest = new char[strlen(source) + 1];
     strcpy(dest, source);
     return dest;
 }
@@ -295,8 +250,39 @@ inline char* mangos_strdup(const char* source)
 #  define M_PI_F        float(M_PI)
 #endif
 
+#ifndef M_NULL_F
+#  define M_NULL_F      0.009f
+#endif
+
 #ifndef countof
 #define countof(array) (sizeof(array) / sizeof((array)[0]))
+#endif
+
+#if defined WIN32
+#     define NOTSAFE_SEMAPHORE_OVERHANDLING "Win32"
+#elif defined  (__FreeBSD__)
+#    define NOTSAFE_SEMAPHORE_OVERHANDLING "FreeBSD"
+#elif defined(__APPLE__)
+#    define NOTSAFE_SEMAPHORE_OVERHANDLING "MacOS"
+#endif
+
+#ifndef INT8_MAX
+#  define INT8_MAX       0x7f
+#  define INT8_MIN       0xff
+#  define UINT8_MAX      0xff
+#  define UINT8_MIN      0x00
+#  define INT16_MAX      0x7fff
+#  define INT16_MIN      0xffff
+#  define UINT16_MAX     0xffff
+#  define UINT16_MIN     0x0000
+#  define INT32_MAX      0x7fffffff
+#  define INT32_MIN      0xffffffff
+#  define UINT32_MAX     0xffffffff
+#  define UINT32_MIN     0x00000000
+#  define INT64_MAX      0x7fffffffffffffff
+#  define INT64_MIN      0xffffffffffffffff
+#  define UINT64_MAX     0xffffffffffffffff
+#  define UINT64_MIN     0x0000000000000000
 #endif
 
 #endif

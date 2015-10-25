@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #ifndef MANGOS_COMPILERDEFS_H
@@ -45,7 +42,6 @@
 #define COMPILER_GNU       1
 #define COMPILER_BORLAND   2
 #define COMPILER_INTEL     3
-#define COMPILER_CLANG     4
 
 #ifdef _MSC_VER
 #  define COMPILER COMPILER_MICROSOFT
@@ -53,17 +49,14 @@
 #  define COMPILER COMPILER_BORLAND
 #elif defined( __INTEL_COMPILER )
 #  define COMPILER COMPILER_INTEL
-#elif defined(__clang__)
-# define COMPILER COMPILER_CLANG
-#elif defined( __GNUC__ ) && !defined(__clang__)
-# define COMPILER COMPILER_GNU
+#elif defined( __GNUC__ )
+#  define COMPILER COMPILER_GNU
 #else
 #  pragma error "FATAL ERROR: Unknown compiler."
 #endif
 
-#if COMPILER == COMPILER_CLANG
-#define COMPILE_ASSERT(exp, name) _Static_assert((exp), #name)
-#else
-#define COMPILE_ASSERT(exp, name) static_assert((exp), #name) 
+#if COMPILER == COMPILER_MICROSOFT
+#  pragma warning( disable : 4267 )                         // conversion from 'size_t' to 'int', possible loss of data
+#  pragma warning( disable : 4786 )                         // identifier was truncated to '255' characters in the debug information
 #endif
 #endif

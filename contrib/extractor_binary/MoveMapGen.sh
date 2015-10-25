@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+# Copyright (C) 2005-2012 MaNGOS project <http://getmangos.com/>
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -54,11 +54,11 @@ badParam()
   echo
 }
 
-if [ "$#" = "3" ]
+if [ "$#" == "3" ]
 then
   LOG_FILE=$2
   DETAIL_LOG_FILE=$3
-elif [ "$#" = "2" ]
+elif [ "$#" == "2" ]
 then
   LOG_FILE=$2
 fi
@@ -84,7 +84,7 @@ createMMaps()
   do
     for j in $EXCLUDE_MAPS
     do
-      if [ "$i" = "$j" ]
+      if [ "$i" == "$j" ]
       then
         continue 2
       fi

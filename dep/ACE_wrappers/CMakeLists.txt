@@ -1,4 +1,5 @@
-# This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+#
+# Copyright (C) 2005-2012 MaNGOS project <http://getmangos.com/>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 
 include(ExternalProject)
 
@@ -52,13 +54,21 @@ if(WIN32 AND MSVC)
     COMMAND ${ACE_BUILD_TOOL} <SOURCE_DIR>\\ace\\ace_vc8.sln /project ACE /build ${CMAKE_BUILD_TYPE}|${ACE_CONFIGURATION}
     ALWAYS 0
   )
-elseif(UNIX) 
+elseif(UNIX)
+  if(CMAKE_BUILD_TOOL MATCHES "/gmake")
+    set(ACE_BUILD_TOOL gmake)
+  else()
+    set(ACE_BUILD_TOOL make)
+  endif()
+
   ExternalProject_Add(ACE_Project
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}
     INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
     DOWNLOAD_COMMAND ""
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/configure --prefix=${CMAKE_INSTALL_PREFIX}
+    CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-ssl CFLAGS=${CMAKE_C_FLAGS} CXXFLAGS=${CMAKE_CXX_FLAGS} CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
+    BUILD_COMMAND ${ACE_BUILD_TOOL} -j2 # export arch="ia32" &&
+    INSTALL_COMMAND ${ACE_BUILD_TOOL} install
   )
 else()
   message(FATAL_ERROR

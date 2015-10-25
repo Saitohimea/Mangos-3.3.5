@@ -1,4 +1,5 @@
-# This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+#
+# Copyright (C) 2005-2012 MaNGOS project <http://getmangos.com/>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,25 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 
-set(EXECUTABLE_NAME realmd)
+if(NOT UNIX)
+  set(EXECUTABLE_NAME realmd)
+else()
+  set(EXECUTABLE_NAME mangos-realmd)
+endif()
 
-set(EXECUTABLE_SRCS
-    AuthCodes.h
-    AuthSocket.cpp
-    AuthSocket.h
-    BufferedSocket.cpp
-    BufferedSocket.h
-    Main.cpp
-    PatchHandler.cpp
-    PatchHandler.h
-    RealmList.cpp
-    RealmList.h
-   )
+file(GLOB_RECURSE EXECUTABLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h)
 
 if(WIN32)
-  # add resource file to windows build
-  set(EXECUTABLE_SRCS ${EXECUTABLE_SRCS} realmd.rc)
+  list(APPEND EXECUTABLE_SRCS
+    realmd.rc
+  )
 endif()
 
 include_directories(
@@ -39,14 +35,9 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/src/framework
   ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/src/shared
+  ${MYSQL_INCLUDE_DIR}
   ${ACE_INCLUDE_DIR}
 )
-
-if(POSTGRESQL)
-  include_directories(${PGSQL_INCLUDE_DIR})
-else()
-  include_directories(${MYSQL_INCLUDE_DIR})
-endif()
 
 add_executable(${EXECUTABLE_NAME}
   ${EXECUTABLE_SRCS}

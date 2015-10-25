@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,19 +26,12 @@ extern SQLStorage sCreatureStorage;
 extern SQLStorage sCreatureDataAddonStorage;
 extern SQLStorage sCreatureInfoAddonStorage;
 extern SQLStorage sCreatureModelStorage;
+extern SQLStorage sGameObjectDataAddonStorage;
 extern SQLStorage sEquipmentStorage;
+extern SQLStorage sGOStorage;
 extern SQLStorage sPageTextStore;
 extern SQLStorage sItemStorage;
 extern SQLStorage sInstanceTemplate;
 extern SQLStorage sWorldTemplate;
-extern SQLStorage sConditionStorage;
-
-extern SQLHashStorage sSpellTemplate;
-extern SQLHashStorage sGOStorage;
-extern SQLHashStorage sGameObjectDataAddonStorage;
-extern SQLHashStorage sCreatureTemplateSpellsStorage;
-
-extern SQLMultiStorage sVehicleAccessoryStorage;
-extern SQLMultiStorage sSpellScriptTargetStorage;
 
 #endif

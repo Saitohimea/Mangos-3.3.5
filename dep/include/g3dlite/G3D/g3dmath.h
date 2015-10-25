@@ -65,6 +65,8 @@ inline double __fastcall drand48() {
     return ::rand() / double(RAND_MAX);
 }
 
+#if !defined(_WIN64)
+
 /**
    Win32 implementation of the C99 fast rounding routines.
    
@@ -78,8 +80,6 @@ inline double __fastcall drand48() {
    provided "as is" without express or implied warranty.
 */
 
-
-#if !defined(_WIN64)
 __inline long int lrint (double flt) {
     int intgr;
 
@@ -101,6 +101,7 @@ __inline long int lrintf(float flt) {
 
     return intgr;
 }
+
 #else
 
     __inline long int lrint (double flt) {
@@ -132,10 +133,6 @@ float fnan();
 
 inline double pi() {
     return 3.1415926535898;
-}
-
-inline float pif() {
-    return 3.1415926535898f;
 }
 
 inline double halfPi() {
@@ -608,18 +605,6 @@ inline double aCos (double fValue) {
             return 0.0;
     } else {
         return pi();
-    }
-}
-
-inline float acos (float fValue) {
-    if ( -1.0f < fValue ) {
-        if ( fValue < 1.0f ) {
-            return ::acos(fValue);
-        } else {
-            return 0.0f;
-        }
-    } else {
-        return pif();
     }
 }
 

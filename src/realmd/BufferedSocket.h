@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,32 +46,33 @@ class BufferedSocket: public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         virtual ~BufferedSocket(void);
 
         size_t recv_len(void) const;
-        bool recv_soft(char* buf, size_t len);
-        bool recv(char* buf, size_t len);
+        bool recv_soft(char *buf, size_t len);
+        bool recv(char *buf, size_t len);
         void recv_skip(size_t len);
 
-        bool send(const char* buf, size_t len);
+        bool send(const char *buf, size_t len);
 
         const std::string& get_remote_address(void) const;
 
-        virtual int open(void*) override;
+        virtual int open(void *);
 
         void close_connection(void);
 
-        virtual int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE) override;
-        virtual int handle_output(ACE_HANDLE = ACE_INVALID_HANDLE) override;
+        virtual int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE);
+        virtual int handle_output(ACE_HANDLE = ACE_INVALID_HANDLE);
 
         virtual int handle_close(ACE_HANDLE = ACE_INVALID_HANDLE,
-                                 ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK);
+                ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK);
 
     private:
-        ssize_t noblk_send(ACE_Message_Block& message_block);
+        ssize_t noblk_send(ACE_Message_Block &message_block);
 
     private:
         ACE_Message_Block input_buffer_;
 
     protected:
         std::string remote_address_;
+
 };
 
 #endif /* _BUFFEREDSOCKET_H_ */

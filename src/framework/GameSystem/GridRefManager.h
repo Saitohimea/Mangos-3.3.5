@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #ifndef _GRIDREFMANAGER
@@ -27,63 +24,25 @@
 template<class OBJECT> class GridReference;
 
 template<class OBJECT>
-/**
- * @brief
- *
- */
 class GridRefManager : public RefManager<GridRefManager<OBJECT>, OBJECT>
 {
     public:
 
-        /**
-         * @brief
-         *
-         */
         typedef LinkedListHead::Iterator< GridReference<OBJECT> > iterator;
 
-        /**
-         * @brief
-         *
-         * @return GridReference<OBJECT>
-         */
         GridReference<OBJECT>* getFirst()
         {
             return (GridReference<OBJECT>*)RefManager<GridRefManager<OBJECT>, OBJECT>::getFirst();
         }
 
-        /**
-         * @brief
-         *
-         * @return GridReference<OBJECT>
-         */
         GridReference<OBJECT>* getLast()
         {
             return (GridReference<OBJECT>*)RefManager<GridRefManager<OBJECT>, OBJECT>::getLast();
         }
 
-        /**
-         * @brief
-         *
-         * @return iterator
-         */
         iterator begin() { return iterator(getFirst()); }
-        /**
-         * @brief
-         *
-         * @return iterator
-         */
         iterator end() { return iterator(NULL); }
-        /**
-         * @brief
-         *
-         * @return iterator
-         */
         iterator rbegin() { return iterator(getLast()); }
-        /**
-         * @brief
-         *
-         * @return iterator
-         */
         iterator rend() { return iterator(NULL); }
 };
 #endif

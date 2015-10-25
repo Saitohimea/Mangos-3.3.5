@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,9 +23,9 @@
 
 template<class MOVEMENT_GEN>
 inline MovementGenerator*
-MovementGeneratorFactory<MOVEMENT_GEN>::Create(void* data) const
+MovementGeneratorFactory<MOVEMENT_GEN>::Create(void *data) const
 {
-    Creature* creature = reinterpret_cast<Creature*>(data);
+    Creature* creature = reinterpret_cast<Creature *>(data);
     return (new MOVEMENT_GEN(*creature));
 }
 #endif

@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,9 +84,8 @@ struct CreatureLinkingInfo
 {
     uint32 mapId;
     uint32 masterId;
+    uint16 linkingFlag;
     uint32 masterDBGuid;
-    uint16 linkingFlag: 16;
-    uint16 searchRange: 16;
 };
 
 /**
@@ -116,20 +115,17 @@ class CreatureLinkingMgr
         CreatureLinkingInfo const* GetLinkedTriggerInformation(Creature* pCreature);
 
     private:
-        typedef std::multimap < uint32 /*slaveEntry*/, CreatureLinkingInfo > CreatureLinkingMap;
+        typedef std::multimap<uint32 /*slaveEntry*/, CreatureLinkingInfo> CreatureLinkingMap;
         typedef std::pair<CreatureLinkingMap::const_iterator, CreatureLinkingMap::const_iterator> CreatureLinkingMapBounds;
 
-        // Storage of Data: npc_entry_slave, (map, npc_entry_master, flag, master_db_guid[If Unique], search_range)
+        // Storage of Data: npc_entry_slave, (map, npc_entry_master, flag, master_db_guid[If Unique])
         CreatureLinkingMap m_creatureLinkingMap;
-        // Storage of Data: npc_guid_slave, (map, npc_guid_master, flag, master_db_guid, search_range)
-        CreatureLinkingMap m_creatureLinkingGuidMap;
 
         // Lookup Storage for fast access:
-        UNORDERED_SET<uint32> m_eventTriggers;              // master by entry
-        UNORDERED_SET<uint32> m_eventGuidTriggers;          // master by guid
+        UNORDERED_SET<uint32> m_eventTriggers;              // master
 
         // Check-routine
-        bool IsLinkingEntryValid(uint32 slaveEntry, CreatureLinkingInfo* pInfo, bool byEntry);
+        bool IsLinkingEntryValid(uint32 slaveEntry, CreatureLinkingInfo* pInfo);
 };
 
 /**
@@ -160,38 +156,27 @@ class CreatureLinkingHolder
         bool TryFollowMaster(Creature* pCreature);
 
     private:
-        // Structure associated to a master (entry case)
-        struct InfoAndGuids
-        {
-            uint16 linkingFlag: 16;
-            uint16 searchRange: 16;
-            GuidList linkedGuids;
-        };
-        // Structure associated to a master (guid case)
-        struct InfoAndGuid
+        typedef std::list<ObjectGuid> GuidList;
+        // Structure associated to a master
+        struct FlagAndGuids
         {
             uint16 linkingFlag;
-            ObjectGuid linkedGuid;
+            GuidList linkedGuids;
         };
 
-        typedef std::multimap < uint32 /*masterEntryOrGuid*/, InfoAndGuids > HolderMap;
+        typedef std::multimap<uint32 /*masterEntry*/, FlagAndGuids> HolderMap;
         typedef std::pair<HolderMap::iterator, HolderMap::iterator> HolderMapBounds;
-        typedef std::multimap < uint32 /*Entry*/, ObjectGuid > BossGuidMap;
-        typedef std::pair<BossGuidMap::iterator, BossGuidMap::iterator> BossGuidMapBounds;
+        typedef UNORDERED_MAP<uint32 /*Entry*/, ObjectGuid> BossGuidMap;
 
         // Helper function, to process a slave list
-        void ProcessSlaveGuidList(CreatureLinkingEvent eventType, Creature* pSource, uint32 flag, uint16 searchRange, GuidList& slaveGuidList, Unit* pEnemy);
+        void ProcessSlaveGuidList(CreatureLinkingEvent eventType, Creature* pSource, uint32 flag, GuidList& slaveGuidList, Unit* pEnemy);
         // Helper function, to process a single slave
         void ProcessSlave(CreatureLinkingEvent eventType, Creature* pSource, uint32 flag, Creature* pSlave, Unit* pEnemy);
         // Helper function to set following
         void SetFollowing(Creature* pWho, Creature* pWhom);
-        // Helper function to return if a slave is in range of a boss
-        bool IsSlaveInRangeOfBoss(Creature* pSlave, Creature* pBoss, uint16 searchRange);
 
-        // Storage of Data (boss, flag, searchRange, GuidList) for action triggering
+        // Storage of Data (boss, flag) GuidList for action triggering
         HolderMap m_holderMap;
-        // Storage of Data (boss, flag, slave-guid)
-        HolderMap m_holderGuidMap;
         // boss_entry, guid for reverse action triggering and check alive
         BossGuidMap m_masterGuid;
 };

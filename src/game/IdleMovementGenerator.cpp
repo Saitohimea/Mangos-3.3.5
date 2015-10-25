@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ DistractMovementGenerator::Interrupt(Unit& /*owner*/)
 bool
 DistractMovementGenerator::Update(Unit& /*owner*/, const uint32& time_diff)
 {
-    if (time_diff > m_timer)
+    if(time_diff > m_timer)
         return false;
 
     m_timer -= time_diff;
@@ -61,15 +61,8 @@ DistractMovementGenerator::Update(Unit& /*owner*/, const uint32& time_diff)
 }
 
 void
-AssistanceDistractMovementGenerator::Finalize(Unit& unit)
+AssistanceDistractMovementGenerator::Finalize(Unit &unit)
 {
     unit.clearUnitState(UNIT_STAT_DISTRACTED);
-    if (Unit* victim = unit.getVictim())
-    {
-        if (unit.isAlive())
-        {
-            unit.AttackStop(true);
-            ((Creature*)&unit)->AI()->AttackStart(victim);
-        }
-    }
+    unit.AddEvent(new AttackResumeEvent(unit), ATTACK_DISPLAY_DELAY);
 }

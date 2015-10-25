@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * World of Warcraft, and all World of Warcraft or Warcraft art, images,
- * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
 #ifndef MANGOS_DEFINE_H
@@ -37,18 +34,14 @@
 #if !defined(MANGOS_ENDIAN)
 #  if defined (ACE_BIG_ENDIAN)
 #    define MANGOS_ENDIAN MANGOS_BIGENDIAN
-#  else // ACE_BYTE_ORDER != ACE_BIG_ENDIAN
+#  else //ACE_BYTE_ORDER != ACE_BIG_ENDIAN
 #    define MANGOS_ENDIAN MANGOS_LITTLEENDIAN
-#  endif // ACE_BYTE_ORDER
-#endif // MANGOS_ENDIAN
+#  endif //ACE_BYTE_ORDER
+#endif //MANGOS_ENDIAN
 
-/**
- * @brief
- *
- */
 typedef ACE_SHLIB_HANDLE MANGOS_LIBRARY_HANDLE;
 
-#define MANGOS_SCRIPT_NAME "mangosscript"
+#define MANGOS_SCRIPT_NAME "mangosscriptR2"
 #define MANGOS_SCRIPT_SUFFIX ACE_DLL_SUFFIX
 #define MANGOS_SCRIPT_PREFIX ACE_DLL_PREFIX
 #define MANGOS_LOAD_LIBRARY(libname)    ACE_OS::dlopen(libname)
@@ -60,7 +53,7 @@ typedef ACE_SHLIB_HANDLE MANGOS_LIBRARY_HANDLE;
 #if PLATFORM == PLATFORM_WINDOWS
 #  define MANGOS_EXPORT __declspec(dllexport)
 #  define MANGOS_IMPORT __cdecl
-#else // PLATFORM != PLATFORM_WINDOWS
+#else //PLATFORM != PLATFORM_WINDOWS
 #  define MANGOS_EXPORT export
 #  if defined(__APPLE_CC__) && defined(BIG_ENDIAN)
 #    define MANGOS_IMPORT __attribute__ ((longcall))
@@ -69,7 +62,7 @@ typedef ACE_SHLIB_HANDLE MANGOS_LIBRARY_HANDLE;
 #  else
 #    define MANGOS_IMPORT __attribute__ ((cdecl))
 #  endif //__APPLE_CC__ && BIG_ENDIAN
-#endif // PLATFORM
+#endif //PLATFORM
 
 #if PLATFORM == PLATFORM_WINDOWS
 #  ifdef MANGOS_WIN32_DLL_IMPORT
@@ -79,112 +72,59 @@ typedef ACE_SHLIB_HANDLE MANGOS_LIBRARY_HANDLE;
 #      define MANGOS_DLL_DECL __declspec(dllexport)
 #    else //!MANGOS_WIND_DLL_EXPORT
 #      define MANGOS_DLL_DECL
-#    endif // MANGOS_WIND_DLL_EXPORT
-#  endif // MANGOS_WIN32_DLL_IMPORT
-#else // PLATFORM != PLATFORM_WINDOWS
+#    endif //MANGOS_WIND_DLL_EXPORT
+#  endif //MANGOS_WIN32_DLL_IMPORT
+#else //PLATFORM != PLATFORM_WINDOWS
 #  define MANGOS_DLL_DECL
-#endif // PLATFORM
+#endif //PLATFORM
 
 #if PLATFORM == PLATFORM_WINDOWS
 #  define MANGOS_DLL_SPEC __declspec(dllexport)
 #  ifndef DECLSPEC_NORETURN
 #    define DECLSPEC_NORETURN __declspec(noreturn)
-#  endif // DECLSPEC_NORETURN
-#else // PLATFORM != PLATFORM_WINDOWS
+#  endif //DECLSPEC_NORETURN
+#else //PLATFORM != PLATFORM_WINDOWS
 #  define MANGOS_DLL_SPEC
 #  define DECLSPEC_NORETURN
-#endif // PLATFORM
+#endif //PLATFORM
 
 #if !defined(DEBUG)
 #  define MANGOS_INLINE inline
-#else // DEBUG
+#else //DEBUG
 #  if !defined(MANGOS_DEBUG)
 #    define MANGOS_DEBUG
-#  endif // MANGOS_DEBUG
+#  endif //MANGOS_DEBUG
 #  define MANGOS_INLINE
 #endif //!DEBUG
 
-#if COMPILER == COMPILER_GNU || COMPILER == COMPILER_CLANG
+#if COMPILER == COMPILER_GNU
 #  define ATTR_NORETURN __attribute__((noreturn))
 #  define ATTR_PRINTF(F,V) __attribute__ ((format (printf, F, V)))
-#else // COMPILER != COMPILER_GNU
+#else //COMPILER != COMPILER_GNU
 #  define ATTR_NORETURN
 #  define ATTR_PRINTF(F,V)
-#endif // COMPILER == COMPILER_GNU
+#endif //COMPILER == COMPILER_GNU
 
-/**
- * @brief A signed integer of 64 bits
- *
- */
 typedef ACE_INT64 int64;
-/**
- * @brief A signed integer of 32 bits
- *
- */
 typedef ACE_INT32 int32;
-/**
- * @brief A signed integer of 16 bits
- *
- */
 typedef ACE_INT16 int16;
-/**
- * @brief A signed integer of 8 bits
- *
- */
 typedef ACE_INT8 int8;
-/**
- * @brief An unsigned integer of 64 bits
- *
- */
 typedef ACE_UINT64 uint64;
-/**
- * @brief An unsigned integer of 32 bits
- *
- */
 typedef ACE_UINT32 uint32;
-/**
- * @brief An unsigned integer of 16 bits
- *
- */
 typedef ACE_UINT16 uint16;
-/**
- * @brief An unsigned integer of 8 bits
- *
- */
 typedef ACE_UINT8 uint8;
 
 #if COMPILER != COMPILER_MICROSOFT
-/**
- * @brief An unsigned integer of 16 bits, only for Win
- *
- */
 typedef uint16      WORD;
-/**
- * @brief An unsigned integer of 32 bits, only for Win
- *
- */
 typedef uint32      DWORD;
-#endif // COMPILER
-
-#define CONCAT(x, y) CONCAT1(x, y)
-#define CONCAT1(x, y) x##y
-#define STATIC_ASSERT_WORKAROUND(expr, msg) typedef char CONCAT(static_assert_failed_at_line_, __LINE__) [(expr) ? 1 : -1]
+#endif //COMPILER
 
 #if COMPILER == COMPILER_GNU
 #  if !defined(__GXX_EXPERIMENTAL_CXX0X__) || (__GNUC__ < 4) || (__GNUC__ == 4) && (__GNUC_MINOR__ < 7)
 #    define override
-#    define static_assert(a, b) STATIC_ASSERT_WORKAROUND(a, b)
-#  endif
-#elif COMPILER == COMPILER_MICROSOFT
-#  if _MSC_VER < 1600
-#    define static_assert(a, b) STATIC_ASSERT_WORKAROUND(a, b)
 #  endif
 #endif
 
-/**
- * @brief
- *
- */
 typedef uint64 OBJECT_HANDLE;
 
-#endif // MANGOS_DEFINE_H
+#endif //MANGOS_DEFINE_H

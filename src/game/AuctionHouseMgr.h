@@ -1,5 +1,5 @@
-/**
- * This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+/*
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,13 +21,17 @@
 
 #include "Common.h"
 #include "SharedDefines.h"
+#include "Platform/Define.h"
 #include "Policies/Singleton.h"
 #include "DBCStructure.h"
+#include "Item.h"
+#include <ace/RW_Thread_Mutex.h>
 
-class Item;
 class Player;
 class Unit;
 class WorldPacket;
+
+struct ItemProtoType;
 
 #define MIN_AUCTION_TIME (12*HOUR)
 #define MAX_AUCTION_SORT 12
@@ -55,6 +59,10 @@ enum AuctionAction
 
 struct AuctionEntry
 {
+    AuctionEntry() : m_deleted(false) {};
+
+    bool   m_deleted;
+
     uint32 Id;
     uint32 itemGuidLow;                                     // can be 0 after send won mail with item
     uint32 itemTemplate;
@@ -76,18 +84,19 @@ struct AuctionEntry
     uint32 GetHouseFaction() const { return auctionHouseEntry->faction; }
     uint32 GetAuctionCut() const;
     uint32 GetAuctionOutBid() const;
-    bool BuildAuctionInfo(WorldPacket& data) const;
+    bool BuildAuctionInfo(WorldPacket & data) const;
     void DeleteFromDB() const;
     void SaveToDB() const;
     void AuctionBidWinning(Player* bidder = NULL);
 
+
     // -1,0,+1 order result
-    int CompareAuctionEntry(uint32 column, const AuctionEntry* auc, Player* viewPlayer) const;
+    int CompareAuctionEntry(uint32 column, const AuctionEntry *auc, Player* viewPlayer) const;
 
     bool UpdateBid(uint32 newbid, Player* newbidder = NULL);// true if normal bid, false if buyout, bidder==NULL for generated bid
 };
 
-// this class is used as auctionhouse instance
+//this class is used as auctionhouse instance
 class AuctionHouseObject
 {
     public:
@@ -106,15 +115,15 @@ class AuctionHouseObject
         AuctionEntryMap const& GetAuctions() const { return AuctionsMap; }
         AuctionEntryMapBounds GetAuctionsBounds() const {return AuctionEntryMapBounds(AuctionsMap.begin(), AuctionsMap.end()); }
 
-        void AddAuction(AuctionEntry* ah)
+        void AddAuction(AuctionEntry *ah)
         {
-            MANGOS_ASSERT(ah);
+            MANGOS_ASSERT( ah );
             AuctionsMap[ah->Id] = ah;
         }
 
         AuctionEntry* GetAuction(uint32 id) const
         {
-            AuctionEntryMap::const_iterator itr = AuctionsMap.find(id);
+            AuctionEntryMap::const_iterator itr = AuctionsMap.find( id );
             return itr != AuctionsMap.end() ? itr->second : NULL;
         }
 
@@ -129,7 +138,7 @@ class AuctionHouseObject
         void BuildListOwnerItems(WorldPacket& data, Player* player, uint32& count, uint32& totalcount);
         void BuildListPendingSales(WorldPacket& data, Player* player, uint32& count);
 
-        AuctionEntry* AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout = 0, uint32 deposit = 0, Player* pl = NULL);
+        AuctionEntry* AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout = 0, uint32 deposit = 0, Player * pl = NULL);
     private:
         AuctionEntryMap AuctionsMap;
 };
@@ -138,8 +147,8 @@ class AuctionSorter
 {
     public:
         AuctionSorter(AuctionSorter const& sorter) : m_sort(sorter.m_sort), m_viewPlayer(sorter.m_viewPlayer) {}
-        AuctionSorter(uint8* sort, Player* viewPlayer) : m_sort(sort), m_viewPlayer(viewPlayer) {}
-        bool operator()(const AuctionEntry* auc1, const AuctionEntry* auc2) const;
+        AuctionSorter(uint8 *sort, Player* viewPlayer) : m_sort(sort), m_viewPlayer(viewPlayer) {}
+        bool operator()(const AuctionEntry *auc1, const AuctionEntry *auc2) const;
 
     private:
         uint8* m_sort;
@@ -162,12 +171,16 @@ class AuctionHouseMgr
         ~AuctionHouseMgr();
 
         typedef UNORDERED_MAP<uint32, Item*> ItemMap;
+        typedef ACE_RW_Thread_Mutex          LockType;
+        typedef ACE_Read_Guard<LockType>     ReadGuard;
+        typedef ACE_Write_Guard<LockType>    WriteGuard;
 
         AuctionHouseObject* GetAuctionsMap(AuctionHouseType houseType) { return &mAuctions[houseType]; }
         AuctionHouseObject* GetAuctionsMap(AuctionHouseEntry const* house);
 
         Item* GetAItem(uint32 id)
         {
+            ReadGuard guard(i_lock);
             ItemMap::const_iterator itr = mAitems.find(id);
             if (itr != mAitems.end())
             {
@@ -176,17 +189,19 @@ class AuctionHouseMgr
             return NULL;
         }
 
-        // auction messages
-        void SendAuctionWonMail(AuctionEntry* auction);
-        void SendAuctionSuccessfulMail(AuctionEntry* auction);
-        void SendAuctionExpiredMail(AuctionEntry* auction);
-        static uint32 GetAuctionDeposit(AuctionHouseEntry const* entry, uint32 time, Item* pItem);
+        //auction messages
+        void SendAuctionWonMail( AuctionEntry * auction );
+        void SendAuctionSuccessfulMail( AuctionEntry * auction );
+        void SendAuctionExpiredMail( AuctionEntry * auction );
+        static uint32 GetAuctionDeposit(AuctionHouseEntry const* entry, uint32 time, Item *pItem);
 
         static uint32 GetAuctionHouseTeam(AuctionHouseEntry const* house);
         static AuctionHouseEntry const* GetAuctionHouseEntry(Unit* unit);
 
+        LockType& GetLock() { return i_lock; }
+
     public:
-        // load first auction items, because of check if item exists, when loading
+        //load first auction items, because of check if item exists, when loading
         void LoadAuctionItems();
         void LoadAuctions();
 
@@ -199,6 +214,8 @@ class AuctionHouseMgr
         AuctionHouseObject  mAuctions[MAX_AUCTION_HOUSE_TYPE];
 
         ItemMap             mAitems;
+
+        LockType            i_lock;
 };
 
 #define sAuctionMgr MaNGOS::Singleton<AuctionHouseMgr>::Instance()
